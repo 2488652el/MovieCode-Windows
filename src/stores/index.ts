@@ -1,0 +1,223 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import type { MediaItem, NASConnection, ScanConfig, AppSettings, PlayerState } from '@/types';
+
+// 媒体库Store
+interface MediaStore {
+  items: MediaItem[];
+  selectedItem: MediaItem | null;
+  isLoading: boolean;
+  error: string | null;
+  searchQuery: string;
+  filterType: 'all' | 'movie' | 'tv' | 'anime';
+  setItems: (items: MediaItem[]) => void;
+  addItem: (item: MediaItem) => void;
+  updateItem: (id: string, updates: Partial<MediaItem>) => void;
+  removeItem: (id: string) => void;
+  setSelectedItem: (item: MediaItem | null) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  setSearchQuery: (query: string) => void;
+  setFilterType: (type: 'all' | 'movie' | 'tv' | 'anime') => void;
+  getFilteredItems: () => MediaItem[];
+}
+
+export const useMediaStore = create<MediaStore>((set, get) => ({
+  items: [],
+  selectedItem: null,
+  isLoading: false,
+  error: null,
+  searchQuery: '',
+  filterType: 'all',
+  
+  setItems: (items) => set({ items }),
+  addItem: (item) => set((state) => ({ items: [...state.items, item] })),
+  updateItem: (id, updates) => set((state) => ({
+    items: state.items.map((item) => item.id === id ? { ...item, ...updates } : item)
+  })),
+  removeItem: (id) => set((state) => ({
+    items: state.items.filter((item) => item.id !== id)
+  })),
+  setSelectedItem: (item) => set({ selectedItem: item }),
+  setLoading: (loading) => set({ isLoading: loading }),
+  setError: (error) => set({ error }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
+  setFilterType: (type) => set({ filterType: type }),
+  getFilteredItems: () => {
+    const { items, searchQuery, filterType } = get();
+    return items.filter((item) => {
+      const matchesSearch = searchQuery === '' || 
+        item.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = filterType === 'all' || item.type === filterType;
+      return matchesSearch && matchesType;
+    });
+  },
+}));
+
+// NAS连接Store
+interface NASStore {
+  connections: NASConnection[];
+  activeConnectionId: string | null;
+  addConnection: (connection: NASConnection) => void;
+  updateConnection: (id: string, updates: Partial<NASConnection>) => void;
+  removeConnection: (id: string) => void;
+  setActiveConnection: (id: string | null) => void;
+  getActiveConnection: () => NASConnection | undefined;
+}
+
+export const useNASStore = create<NASStore>()(
+  persist(
+    (set, get) => ({
+      connections: [],
+      activeConnectionId: null,
+      
+      addConnection: (connection) => set((state) => ({
+        connections: [...state.connections, connection]
+      })),
+      updateConnection: (id, updates) => set((state) => ({
+        connections: state.connections.map((conn) =>
+          conn.id === id ? { ...conn, ...updates } : conn
+        )
+      })),
+      removeConnection: (id) => set((state) => ({
+        connections: state.connections.filter((conn) => conn.id !== id),
+        activeConnectionId: state.activeConnectionId === id ? null : state.activeConnectionId
+      })),
+      setActiveConnection: (id) => set({ activeConnectionId: id }),
+      getActiveConnection: () => {
+        const { connections, activeConnectionId } = get();
+        return connections.find((conn) => conn.id === activeConnectionId);
+      },
+    }),
+    { name: 'nas-store' }
+  )
+);
+
+// 扫描配置Store
+interface ScanStore {
+  configs: ScanConfig[];
+  isScanning: boolean;
+  scanProgress: number;
+  addConfig: (config: ScanConfig) => void;
+  updateConfig: (id: string, updates: Partial<ScanConfig>) => void;
+  removeConfig: (id: string) => void;
+  setScanning: (scanning: boolean) => void;
+  setProgress: (progress: number) => void;
+}
+
+export const useScanStore = create<ScanStore>()(
+  persist(
+    (set) => ({
+      configs: [],
+      isScanning: false,
+      scanProgress: 0,
+      
+      addConfig: (config) => set((state) => ({ configs: [...state.configs, config] })),
+      updateConfig: (id, updates) => set((state) => ({
+        configs: state.configs.map((cfg) => cfg.id === id ? { ...cfg, ...updates } : cfg)
+      })),
+      removeConfig: (id) => set((state) => ({
+        configs: state.configs.filter((cfg) => cfg.id !== id)
+      })),
+      setScanning: (scanning) => set({ isScanning: scanning }),
+      setProgress: (progress) => set({ scanProgress: progress }),
+    }),
+    { name: 'scan-store' }
+  )
+);
+
+// 设置Store
+interface SettingsStore {
+  settings: AppSettings;
+  updateSettings: (updates: Partial<AppSettings>) => void;
+  resetSettings: () => void;
+}
+
+const defaultSettings: AppSettings = {
+  tmdbApiKey: '',
+  language: 'zh-CN',
+  defaultMediaType: 'movie',
+  scanOnStartup: false,
+  autoPlay: true,
+  defaultQuality: 'auto',
+  subtitleLanguage: 'zh',
+  theme: 'dark',
+};
+
+export const useSettingsStore = create<SettingsStore>()(
+  persist(
+    (set) => ({
+      settings: defaultSettings,
+      updateSettings: (updates) => set((state) => ({
+        settings: { ...state.settings, ...updates }
+      })),
+      resetSettings: () => set({ settings: defaultSettings }),
+    }),
+    { name: 'settings-store' }
+  )
+);
+
+// 播放器Store
+interface PlayerStore extends PlayerState {
+  currentMedia: MediaItem | null;
+  currentEpisode: number;
+  setCurrentMedia: (media: MediaItem | null) => void;
+  setCurrentEpisode: (episode: number) => void;
+  play: () => void;
+  pause: () => void;
+  setCurrentTime: (time: number) => void;
+  setDuration: (duration: number) => void;
+  setVolume: (volume: number) => void;
+  toggleMute: () => void;
+  toggleFullscreen: () => void;
+  setPlaybackRate: (rate: number) => void;
+  setBuffered: (buffered: number) => void;
+  reset: () => void;
+}
+
+export const usePlayerStore = create<PlayerStore>((set) => ({
+  currentMedia: null,
+  currentEpisode: 1,
+  isPlaying: false,
+  currentTime: 0,
+  duration: 0,
+  volume: 1,
+  isMuted: false,
+  isFullscreen: false,
+  playbackRate: 1,
+  buffered: 0,
+  
+  setCurrentMedia: (media) => set({ currentMedia: media, currentTime: 0, isPlaying: false }),
+  setCurrentEpisode: (episode) => set({ currentEpisode: episode, currentTime: 0 }),
+  play: () => set({ isPlaying: true }),
+  pause: () => set({ isPlaying: false }),
+  setCurrentTime: (time) => set({ currentTime: time }),
+  setDuration: (duration) => set({ duration }),
+  setVolume: (volume) => set({ volume }),
+  toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
+  toggleFullscreen: () => set((state) => ({ isFullscreen: !state.isFullscreen })),
+  setPlaybackRate: (rate) => set({ playbackRate: rate }),
+  setBuffered: (buffered) => set({ buffered }),
+  reset: () => set({
+    isPlaying: false,
+    currentTime: 0,
+    duration: 0,
+    currentMedia: null,
+    currentEpisode: 1
+  }),
+}));
+
+// UI Store
+interface UIStore {
+  sidebarCollapsed: boolean;
+  currentTab: 'home' | 'settings';
+  toggleSidebar: () => void;
+  setCurrentTab: (tab: 'home' | 'settings') => void;
+}
+
+export const useUIStore = create<UIStore>((set) => ({
+  sidebarCollapsed: false,
+  currentTab: 'home',
+  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  setCurrentTab: (tab) => set({ currentTab: tab }),
+}));

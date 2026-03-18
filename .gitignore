@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+*.exe
+*.msi
+*-setup.exe
+
+# Rust build
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment (keep template only)
+.env
+.env.local
+config/
+
+# Temporary files
+*.tmp
+*.bak
