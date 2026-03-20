@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovieCode Windows - UI Preview 2.0</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      background: #101214;
+      color: #f5f5f7;
+      overflow-x: hidden;
+    }
+
+    /* 渐变背景 */
+    .gradient-primary {
+      background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+    }
+
+    .gradient-soft {
+      background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(94, 92, 230, 0.15) 100%);
+    }
+
+    .gradient-hero {
+      background: linear-gradient(to right,
+        rgba(16, 18, 20, 0.95) 0%,
+        rgba(16, 18, 20, 0.7) 35%,
+        rgba(16, 18, 20, 0.3) 60%,
+        rgba(16, 18, 20, 0.1) 100%
+      );
+    }
+
+    .gradient-bottom {
+      background: linear-gradient(to top,
+        rgba(16, 18, 20, 0.95) 0%,
+        rgba(16, 18, 20, 0.6) 30%,
+        transparent 100%
+      );
+    }
+
+    /* 玻璃态 */
+    .glass {
+      background: rgba(28, 28, 30, 0.72);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-strong {
+      background: rgba(16, 18, 20, 0.85);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* 文字渐变 */
+    .text-gradient {
+      background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* 海报卡片 */
+    .poster-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      transform-origin: center center;
+    }
+
+    .poster-card:hover {
+      transform: scale(1.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(10, 132, 255, 0.3);
+      z-index: 10;
+    }
+
+    .poster-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 40%, transparent 70%);
+      z-index: 1;
+    }
+
+    .poster-card:hover::before {
+      opacity: 1;
+    }
+
+    /* 分类Tab */
+    .category-tab {
+      position: relative;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #8e8e93;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border-radius: 0.75rem;
+    }
+
+    .category-tab:hover {
+      color: #f5f5f7;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .category-tab.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, rgba(10, 132, 255, 0.3) 0%, rgba(94, 92, 230, 0.3) 100%);
+      box-shadow: 0 4px 15px rgba(10, 132, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    /* 导航Tab */
+    .nav-tab {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #8e8e93;
+      background: transparent;
+      border: none;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .nav-tab:hover {
+      color: #f5f5f7;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, rgba(10, 132, 255, 0.4) 0%, rgba(94, 92, 230, 0.4) 100%);
+      box-shadow: 0 4px 12px rgba(10, 132, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    /* 按钮 */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 2rem;
+      background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 2rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* 媒体标签 */
+    .media-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+
+    .media-tag.movie {
+      background: rgba(10, 132, 255, 0.85);
+      color: white;
+    }
+
+    .media-tag.tv {
+      background: rgba(191, 90, 242, 0.85);
+      color: white;
+    }
+
+    .media-tag.anime {
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.9) 0%, rgba(191, 90, 242, 0.9) 100%);
+      color: white;
+    }
+
+    /* 评分徽章 */
+    .rating-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      background: rgba(255, 214, 10, 0.9);
+      color: #1c1c1e;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* 轮播 */
+    .carousel-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .carousel-indicator:hover {
+      background: rgba(255, 255, 255, 0.5);
+      transform: scale(1.2);
+    }
+
+    .carousel-indicator.active {
+      width: 24px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #0a84ff, #5e5ce6);
+    }
+
+    /* 动画 */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    /* 滚动条 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div id="app" class="h-screen flex flex-col">
+    <!-- Header -->
+    <header class="h-16 flex items-center justify-between px-6 glass-strong border-b border-white/5 relative z-50">
+      <!-- Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-lg">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+          </svg>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-xl font-bold text-gradient leading-none">MovieCode</span>
+          <span class="text-[10px] text-gray-500 tracking-wider">MEDIA CENTER</span>
+        </div>
+      </div>
+
+      <!-- Nav Tabs -->
+      <nav class="flex items-center gap-1 bg-gray-800/50 backdrop-blur-sm rounded-2xl p-1.5">
+        <button class="nav-tab active" onclick="switchTab('home')">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          <span>媒体库</span>
+        </button>
+        <button class="nav-tab" onclick="switchTab('settings')">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>设置</span>
+        </button>
+      </nav>
+
+      <!-- Right Actions -->
+      <div class="flex items-center gap-3">
+        <div class="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-gray-800/50 rounded-lg">
+          <kbd class="px-1.5 py-0.5 bg-gray-700 rounded text-xs text-gray-400">Ctrl</kbd>
+          <kbd class="px-1.5 py-0.5 bg-gray-700 rounded text-xs text-gray-400">K</kbd>
+          <span class="text-xs text-gray-500 ml-1">搜索</span>
+        </div>
+        <button class="relative p-2.5 rounded-xl hover:bg-gray-800/50 transition-colors">
+          <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+        <div class="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-white font-semibold text-sm shadow-lg">
+          U
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-gray-900">
+      <!-- Hero Carousel -->
+      <div class="relative h-[420px] flex-shrink-0" id="hero-carousel">
+        <!-- Slides -->
+        <div class="absolute inset-0">
+          <img id="hero-bg" src="https://image.tmdb.org/t/p/original/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg" alt="" class="w-full h-full object-cover">
+          <div class="absolute inset-0 gradient-hero"></div>
+          <div class="absolute inset-0 gradient-bottom"></div>
+          <div class="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent"></div>
+        </div>
+
+        <!-- Content -->
+        <div class="relative h-full max-w-7xl mx-auto px-8 flex flex-col justify-end pb-12">
+          <div class="max-w-3xl">
+            <!-- Tags -->
+            <div class="flex items-center gap-3 mb-4" id="hero-tags">
+              <span class="media-tag movie">电影</span>
+              <span class="rating-badge">8.7</span>
+              <span class="text-gray-300 text-sm">1994</span>
+            </div>
+
+            <!-- Title -->
+            <h1 class="text-5xl font-bold text-white mb-4 drop-shadow-lg" id="hero-title">肖申克的救赎</h1>
+
+            <!-- Overview -->
+            <p class="text-gray-200 text-base leading-relaxed mb-6 max-w-2xl line-clamp-2" id="hero-overview">
+              一场谋杀案使银行家安迪蒙冤入狱，被判终身监禁。在长达20年的囚禁中，安迪始终没有放弃对自由的渴望，对智慧的追求。
+            </p>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-4">
+              <button class="btn-primary animate-float" onclick="playItem()">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                立即播放
+              </button>
+              <button class="btn-secondary">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                详情
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <button onclick="prevSlide()" class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center hover:bg-blue-500/80 transition-all z-10 opacity-70 hover:opacity-100">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button onclick="nextSlide()" class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 flex items-center justify-center hover:bg-blue-500/80 transition-all z-10 opacity-70 hover:opacity-100">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+
+        <!-- Indicators -->
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+          <button onclick="goToSlide(0)" class="carousel-indicator active"></button>
+          <button onclick="goToSlide(1)" class="carousel-indicator"></button>
+          <button onclick="goToSlide(2)" class="carousel-indicator"></button>
+          <button onclick="goToSlide(3)" class="carousel-indicator"></button>
+        </div>
+      </div>
+
+      <!-- Category Tabs + Content -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Category Bar -->
+        <div class="flex-shrink-0 px-6 py-4 border-b border-white/5">
+          <div class="flex items-center justify-between">
+            <!-- Tabs -->
+            <div class="flex items-center gap-2">
+              <button class="category-tab active" onclick="switchCategory('all')">
+                <span>推荐</span>
+              </button>
+              <button class="category-tab" onclick="switchCategory('movie')">
+                <span>电影</span>
+              </button>
+              <button class="category-tab" onclick="switchCategory('tv')">
+                <span>电视剧</span>
+              </button>
+              <button class="category-tab" onclick="switchCategory('anime')">
+                <span>动漫</span>
+              </button>
+            </div>
+
+            <!-- Search -->
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <input type="text" placeholder="搜索电影、电视剧..." class="pl-10 pr-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-full text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:bg-gray-800 transition-all w-64 outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Scroll -->
+        <div class="flex-1 overflow-y-auto px-6 py-6">
+          <!-- Category Header -->
+          <div class="mb-6 p-6 rounded-2xl bg-gradient-to-r from-blue-500/20 to-purple-500/20">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl" id="category-icon"></span>
+              <div>
+                <h2 class="text-xl font-bold text-white" id="category-title">精选推荐</h2>
+                <p class="text-gray-400 text-sm mt-1"><span id="category-count">6</span> 部影片等你发现</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Poster Row -->
+          <div class="relative group">
+            <div class="flex items-center gap-3 mb-4 px-2">
+              <h2 class="text-xl font-semibold text-white" id="row-title">最近更新</h2>
+              <div class="flex-1 h-px bg-gradient-to-r from-gray-600/50 to-transparent"></div>
+              <span class="text-gray-500 text-sm"><span id="row-count">6</span> 部</span>
+            </div>
+
+            <div class="flex gap-5 overflow-x-auto scrollbar-hide pb-4 px-2" id="poster-row">
+              <!-- Posters will be generated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // 演示数据
+    const carouselData = [
+      {
+        title: '肖申克的救赎',
+        type: 'movie',
+        rating: 8.7,
+        year: 1994,
+        overview: '一场谋杀案使银行家安迪蒙冤入狱，被判终身监禁。在长达20年的囚禁中，安迪始终没有放弃对自由的渴望。',
+        backdrop: 'https://image.tmdb.org/t/p/original/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg'
+      },
+      {
+        title: '教父',
+        type: 'movie',
+        rating: 8.7,
+        year: 1972,
+        overview: '维托·唐·柯里昂是黑手党柯里昂家族的首领，带领家族从事非法的勾当，但他内心善良。',
+        backdrop: 'https://image.tmdb.org/t/p/original/tmU7GeKVybMWFButWEGl2M4GeiP.jpg'
+      },
+      {
+        title: '绝命毒师',
+        type: 'tv',
+        rating: 9.3,
+        year: 2008,
+        overview: '化学老师沃尔特·怀特因身患癌症，再加上生活所迫，走上了制毒贩毒的道路。',
+        backdrop: 'https://image.tmdb.org/t/p/original/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg'
+      },
+      {
+        title: '进击的巨人',
+        type: 'anime',
+        rating: 9.0,
+        year: 2013,
+        overview: '在遥远的过去，人类曾一度因被巨人捕食而崩溃。幸存下来的人们建造了三重巨大的城墙来防御巨人的入侵。',
+        backdrop: 'https://image.tmdb.org/t/p/original/x2RS3uTcsJJ9IfjNPcgDmukoEcQ.jpg'
+      }
+    ];
+
+    const posterData = [
+      { id: 1, title: '肖申克的救赎', type: 'movie', poster: 'https://image.tmdb.org/t/p/w500/9cqNxx0GxF0bflZmeSMuL5tnGzr.jpg', rating: 8.7, year: 1994 },
+      { id: 2, title: '教父', type: 'movie', poster: 'https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg', rating: 8.7, year: 1972 },
+      { id: 3, title: '指环王', type: 'movie', poster: 'https://image.tmdb.org/t/p/w500/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg', rating: 8.5, year: 2003 },
+      { id: 4, title: '盗梦空间', type: 'movie', poster: 'https://image.tmdb.org/t/p/w500/edv5CZvWj09upOsy2Y6IwDhK8bt.jpg', rating: 8.4, year: 2010 },
+      { id: 5, title: '进击的巨人', type: 'anime', poster: 'https://image.tmdb.org/t/p/w500/arN0O8MNXtL4ZqQBwfXmHp7RrM8.jpg', rating: 9.0, year: 2013 },
+      { id: 6, title: '绝命毒师', type: 'tv', poster: 'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', rating: 9.3, year: 2008 },
+      { id: 7, title: '黑暗荣耀', type: 'tv', poster: 'https://image.tmdb.org/t/p/w500/v7aJ4gMlncJCRuclassic9N4oVvh.jpg', rating: 8.1, year: 2022 },
+      { id: 8, title: '鬼灭之刃', type: 'anime', poster: 'https://image.tmdb.org/t/p/w500/tRto4sg9knK4KnedwD0lI9zXjky.jpg', rating: 8.6, year: 2019 },
+    ];
+
+    let currentSlide = 0;
+    let currentCategory = 'all';
+    let autoPlayInterval;
+
+    // 初始化
+    function init() {
+      renderPosters();
+      startAutoPlay();
+    }
+
+    // 轮播控制
+    function updateSlide() {
+      const data = carouselData[currentSlide];
+      document.getElementById('hero-bg').src = data.backdrop;
+      document.getElementById('hero-title').textContent = data.title;
+      document.getElementById('hero-rating').textContent = data.rating;
+      document.getElementById('hero-year').textContent = data.year;
+      document.getElementById('hero-overview').textContent = data.overview;
+
+      const tagHtml = `
+        <span class="media-tag ${data.type}">${data.type === 'movie' ? '电影' : data.type === 'tv' ? '剧集' : '动漫'}</span>
+        <span class="rating-badge">${data.rating}</span>
+        <span class="text-gray-300 text-sm">${data.year}</span>
+      `;
+      document.getElementById('hero-tags').innerHTML = tagHtml;
+
+      // 更新指示器
+      document.querySelectorAll('.carousel-indicator').forEach((ind, i) => {
+        ind.classList.toggle('active', i === currentSlide);
+      });
+    }
+
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % carouselData.length;
+      updateSlide();
+    }
+
+    function prevSlide() {
+      currentSlide = (currentSlide - 1 + carouselData.length) % carouselData.length;
+      updateSlide();
+    }
+
+    function goToSlide(index) {
+      currentSlide = index;
+      updateSlide();
+    }
+
+    function startAutoPlay() {
+      autoPlayInterval = setInterval(nextSlide, 6000);
+    }
+
+    // 分类切换
+    function switchCategory(category) {
+      currentCategory = category;
+      document.querySelectorAll('.category-tab').forEach(tab => {
+        const text = tab.textContent.trim();
+        const isActive = (category === 'all' && text === '推荐') ||
+                        (category === 'movie' && text === '电影') ||
+                        (category === 'tv' && text === '电视剧') ||
+                        (category === 'anime' && text === '动漫');
+        tab.classList.toggle('active', isActive);
+      });
+
+      const config = {
+        all: { icon: '', title: '精选推荐' },
+        movie: { icon: '', title: '精彩电影' },
+        tv: { icon: '', title: '热门剧集' },
+        anime: { icon: '', title: '热门动漫' }
+      };
+
+      document.getElementById('category-icon').textContent = config[category].icon;
+      document.getElementById('category-title').textContent = config[category].title;
+      document.getElementById('row-title').textContent = category === 'all' ? '最近更新' : config[category].title + '列表';
+
+      renderPosters();
+    }
+
+    // 渲染海报
+    function renderPosters() {
+      const filtered = currentCategory === 'all'
+        ? posterData
+        : posterData.filter(p => p.type === currentCategory);
+
+      document.getElementById('category-count').textContent = filtered.length;
+      document.getElementById('row-count').textContent = filtered.length;
+
+      const html = filtered.map(item => `
+        <div class="poster-card flex-shrink-0 w-44 h-66" onclick="selectItem(${item.id})">
+          <div class="relative w-full h-full rounded-xl overflow-hidden bg-gray-800">
+            <img src="${item.poster}" alt="${item.title}" class="w-full h-full object-cover">
+            <div class="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-4">
+              <span class="media-tag ${item.type} mb-2">${item.type === 'movie' ? '电影' : item.type === 'tv' ? '剧集' : '动漫'}</span>
+              <h3 class="text-white font-semibold text-sm line-clamp-2">${item.title}</h3>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="rating-badge">${item.rating}</span>
+                <span class="text-gray-300 text-xs">${item.year}</span>
+              </div>
+              <button class="mt-3 w-full py-1.5 bg-white/20 rounded-lg text-white text-xs font-medium flex items-center justify-center gap-1">
+                播放
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('poster-row').innerHTML = html;
+    }
+
+    function selectItem(id) {
+      const item = posterData.find(p => p.id === id);
+      if (item) {
+        console.log('选择播放:', item.title);
+      }
+    }
+
+    function playItem() {
+      const item = carouselData[currentSlide];
+      console.log('立即播放:', item.title);
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-tab').forEach(t => {
+        const text = t.textContent.trim();
+        t.classList.toggle('active', (tab === 'home' && text === '媒体库') || (tab === 'settings' && text === '设置'));
+      });
+    }
+
+    // 键盘控制
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') prevSlide();
+      if (e.key === 'ArrowRight') nextSlide();
+    });
+
+    // 鼠标悬停暂停轮播
+    document.getElementById('hero-carousel').addEventListener('mouseenter', () => {
+      clearInterval(autoPlayInterval);
+    });
+    document.getElementById('hero-carousel').addEventListener('mouseleave', () => {
+      startAutoPlay();
+    });
+
+    init();
+  </script>
+</body>
+</html>
