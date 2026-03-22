@@ -77,7 +77,7 @@ pub fn init_db() {
 
 // 获取数据库连接
 fn get_db() -> Option<Connection> {
-    DB_PATH.lock().unwrap().clone()
+    DB_PATH.lock().unwrap().take()
 }
 
 // 搜索字幕文件

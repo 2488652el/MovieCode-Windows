@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, ReactElement } from 'react';
 import { recommendationService, RecommendationItem } from '@/services/recommendationService';
 import { useMediaStore, useHistoryStore } from '@/stores';
 import { getImageUrl } from '@/services/api/tmdb';
@@ -43,7 +43,7 @@ export const RecommendPage: React.FC = () => {
     }
   }, [activeTab, selectedItem, recentWatched]);
 
-  const tabs: { key: RecommendTab; label: string; icon: JSX.Element }[] = [
+  const tabs: { key: RecommendTab; label: string; icon: ReactElement }[] = [
     {
       key: 'for-you',
       label: '为你推荐',

@@ -398,3 +398,176 @@ export const useUIStore = create<UIStore>((set) => ({
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setCurrentTab: (tab) => set({ currentTab: tab }),
 }));
+
+// ==================== 历史记录 Store (别名) ====================
+// 基于 WatchStatsStore 的历史记录功能
+
+export interface PlayHistoryEntry {
+  mediaId: string;
+  title: string;
+  type: 'movie' | 'tv' | 'anime';
+  posterPath?: string;
+  backdropPath?: string;
+  currentTime: number;
+  duration: number;
+  progress: number;
+  lastWatched: number;
+  episodeNumber?: number;
+  seasonNumber?: number;
+}
+
+interface HistoryStore {
+  entries: PlayHistoryEntry[];
+  addEntry: (entry: PlayHistoryEntry) => void;
+  removeEntry: (id: string) => void;
+  clearHistory: () => void;
+  getEntryByMediaId: (mediaId: string) => PlayHistoryEntry | undefined;
+  getEntry: (mediaId: string) => PlayHistoryEntry | undefined;
+}
+
+export const useHistoryStore = create<HistoryStore>()(
+  persist(
+    (set, get) => ({
+      entries: [],
+      addEntry: (entry) => set((state) => {
+        const exists = state.entries.find(e => e.mediaId === entry.mediaId);
+        if (exists) {
+          return {
+            entries: state.entries.map(e => e.mediaId === entry.mediaId ? entry : e)
+          };
+        }
+        return { entries: [entry, ...state.entries] };
+      }),
+      removeEntry: (id) => set((state) => ({
+        entries: state.entries.filter(e => e.mediaId !== id)
+      })),
+      clearHistory: () => set({ entries: [] }),
+      getEntryByMediaId: (mediaId) => get().entries.find(e => e.mediaId === mediaId),
+      getEntry: (mediaId) => get().entries.find(e => e.mediaId === mediaId),
+    }),
+    { name: 'history-store' }
+  )
+);
+
+// ==================== 家长控制 Store ====================
+
+interface ParentalControlsStore {
+  isEnabled: boolean;
+  pin: string;
+  settings: {
+    contentRating: string;
+    blockedGenres: string[];
+    allowedMediaTypes: string[];
+    dailyWatchLimit: number;
+  };
+  isUnlocked: boolean;
+  isParentalUnlocked: boolean;
+  setEnabled: (enabled: boolean) => void;
+  setPin: (pin: string) => void;
+  setContentRating: (rating: string) => void;
+  blockGenre: (genre: string) => void;
+  unblockGenre: (genre: string) => void;
+  setAllowedMediaTypes: (types: string[]) => void;
+  setDailyWatchLimit: (minutes: number) => void;
+  verifyPin: (pin: string) => boolean;
+  unlockTemporarily: () => void;
+  lock: () => void;
+  isContentAllowed: (item: { type: string; genres?: string[] }) => boolean;
+}
+
+export const useParentalControlsStore = create<ParentalControlsStore>()(
+  persist(
+    (set, get) => ({
+      isEnabled: false,
+      pin: '',
+      settings: {
+        contentRating: 'PG-13',
+        blockedGenres: [],
+        allowedMediaTypes: ['movie', 'tv', 'anime'],
+        dailyWatchLimit: 0,
+      },
+      isUnlocked: false,
+      isParentalUnlocked: false,
+      setEnabled: (enabled) => set({ isEnabled: enabled }),
+      setPin: (pin) => set({ pin }),
+      setContentRating: (rating) => set((state) => ({
+        settings: { ...state.settings, contentRating: rating }
+      })),
+      blockGenre: (genre) => set((state) => ({
+        settings: { ...state.settings, blockedGenres: [...state.settings.blockedGenres, genre] }
+      })),
+      unblockGenre: (genre) => set((state) => ({
+        settings: { ...state.settings, blockedGenres: state.settings.blockedGenres.filter(g => g !== genre) }
+      })),
+      setAllowedMediaTypes: (types) => set((state) => ({
+        settings: { ...state.settings, allowedMediaTypes: types }
+      })),
+      setDailyWatchLimit: (minutes) => set((state) => ({
+        settings: { ...state.settings, dailyWatchLimit: minutes }
+      })),
+      verifyPin: (pin) => get().pin === pin,
+      unlockTemporarily: () => set({ isParentalUnlocked: true }),
+      lock: () => set({ isParentalUnlocked: false }),
+      isContentAllowed: (item) => {
+        const { isEnabled, settings, isParentalUnlocked } = get();
+        if (!isEnabled || isParentalUnlocked) return true;
+        if (!settings.allowedMediaTypes.includes(item.type)) return false;
+        if (item.genres?.some(g => settings.blockedGenres.includes(g))) return false;
+        return true;
+      },
+    }),
+    { name: 'parental-controls-store' }
+  )
+);
+
+// ==================== 主题 Store ====================
+
+interface ThemeStore {
+  settings: {
+    mode: 'dark' | 'light' | 'system';
+    accentColor: string;
+    autoDarkStart: string;
+    autoDarkEnd: string;
+  };
+  isDark: boolean;
+  setThemeMode: (mode: 'dark' | 'light' | 'system') => void;
+  setAccentColor: (color: string) => void;
+  setAutoDarkTime: (start: string, end: string) => void;
+  updateIsDark: () => void;
+}
+
+export const useThemeStore = create<ThemeStore>()(
+  persist(
+    (set, get) => ({
+      settings: {
+        mode: 'dark',
+        accentColor: '#6366f1',
+        autoDarkStart: '22:00',
+        autoDarkEnd: '06:00',
+      },
+      isDark: true,
+      setThemeMode: (mode) => set((state) => ({
+        settings: { ...state.settings, mode }
+      })),
+      setAccentColor: (color) => set((state) => ({
+        settings: { ...state.settings, accentColor: color }
+      })),
+      setAutoDarkTime: (start, end) => set((state) => ({
+        settings: { ...state.settings, autoDarkStart: start, autoDarkEnd: end }
+      })),
+      updateIsDark: () => {
+        const { settings } = get();
+        if (settings.mode === 'system') {
+          const hour = new Date().getHours();
+          const start = parseInt(settings.autoDarkStart.split(':')[0] || '22');
+          const end = parseInt(settings.autoDarkEnd.split(':')[0] || '6');
+          const isNight = hour >= start || hour < end;
+          set({ isDark: isNight });
+        } else {
+          set({ isDark: settings.mode === 'dark' });
+        }
+      },
+    }),
+    { name: 'theme-store' }
+  )
+);

@@ -397,6 +397,7 @@ export const useWatchStatsStore = create<WatchStatsStore>()(
       },
 
       getWatchStats: (userId, days = 30) => {
+        if (days === undefined) days = 30;
         const records = get().getUserRecords(userId);
         const now = Date.now();
         const cutoff = now - days * 24 * 60 * 60 * 1000;

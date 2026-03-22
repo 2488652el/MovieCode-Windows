@@ -222,7 +222,7 @@ export class MediaServerConnector {
 
     return {
       key: item.key,
-      title: item.title || item grandparentTitle + ' - ' + item.index,
+      title: item.title || (item.grandparentTitle + ' - ' + item.index),
       type: typeMap[item.type] || 'movie',
       year: item.year ? parseInt(item.year) : undefined,
       thumb: item.thumb ? `${this.config.url}${item.thumb}?X-Plex-Token=${this.config.apiKey}` : undefined,

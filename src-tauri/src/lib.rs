@@ -24,11 +24,6 @@ pub fn run() {
             commands::test_nas_connection,
             commands::browse_directory,
             commands::get_local_drives,
-            // 新增播放相关命令
-            commands::search_subtitle_files,
-            commands::open_subtitle_file_dialog,
-            commands::save_playback_progress,
-            commands::get_playback_progress,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
