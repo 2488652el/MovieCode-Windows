@@ -1,7 +1,70 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getImageUrl } from '@/services/api/tmdb';
+import { imageCache } from '@/services/imageCache';
 import type { MediaItem } from '@/types';
 import { usePlayerStore } from '@/stores';
+
+/**
+ * 懒加载海报图片组件
+ * 使用 IntersectionObserver 优化图片加载
+ */
+const LazyPosterImage: React.FC<{ posterPath: string; title: string }> = ({ posterPath, title }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState<string>('');
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: '200px', threshold: 0.01 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (isVisible && posterPath) {
+      const originalUrl = getImageUrl(posterPath, 'w500') || '';
+      // 尝试从缓存获取
+      imageCache.getImageUrl(originalUrl).then((cachedUrl) => {
+        setCurrentSrc(cachedUrl || originalUrl);
+      }).catch(() => {
+        setCurrentSrc(originalUrl);
+      });
+    }
+  }, [isVisible, posterPath]);
+
+  return (
+    <div ref={containerRef} className="w-full h-full">
+      {!isLoaded && (
+        <div className="w-full h-full skeleton animate-pulse" />
+      )}
+      {currentSrc && (
+        <img
+          src={currentSrc}
+          alt={title}
+          className={`w-full h-full object-cover transition-all duration-500 ${
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          loading="lazy"
+          onLoad={() => setIsLoaded(true)}
+        />
+      )}
+    </div>
+  );
+};
 
 interface PosterCardProps {
   item: MediaItem;
@@ -45,15 +108,10 @@ export const PosterCard: React.FC<PosterCardProps> = ({ item, onClick, size = 'm
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
     >
-      {/* 海报图片 */}
+      {/* 海报图片 - 使用懒加载 */}
       <div className="relative w-full h-full rounded-xl overflow-hidden bg-apple-gray-800">
         {item.posterPath ? (
-          <img
-            src={getImageUrl(item.posterPath, 'w500') || ''}
-            alt={item.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            loading="lazy"
-          />
+          <LazyPosterImage posterPath={item.posterPath} title={item.title} />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-apple-gray-700 to-apple-gray-800">
             <svg className="w-12 h-12 text-apple-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,6 +189,61 @@ export const PosterCard: React.FC<PosterCardProps> = ({ item, onClick, size = 'm
   );
 };
 
+/**
+ * 懒加载海报卡片 - 只在进入视口时渲染
+ */
+const LazyPosterCard: React.FC<{
+  item: MediaItem;
+  onClick: () => void;
+  index: number;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+}> = ({ item, onClick, index, containerRef }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || !cardRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { root: containerRef.current, rootMargin: '100px', threshold: 0 }
+    );
+
+    observer.observe(cardRef.current);
+
+    return () => observer.disconnect();
+  }, [containerRef]);
+
+  // 未进入视口时显示占位符
+  if (!isVisible) {
+    return (
+      <div
+        ref={cardRef}
+        className="w-44 h-66 flex-shrink-0 rounded-xl skeleton animate-pulse"
+        style={{ transitionDelay: `${index * 30}ms` }}
+      />
+    );
+  }
+
+  // 使用完整的 PosterCard
+  return (
+    <div
+      ref={cardRef}
+      className="transition-all duration-300"
+      style={{ transitionDelay: `${index * 30}ms` }}
+    >
+      <PosterCard item={item} onClick={onClick} />
+    </div>
+  );
+};
+
 interface PosterRowProps {
   title: string;
   items: MediaItem[];
@@ -183,6 +296,7 @@ export const PosterRow: React.FC<PosterRowProps> = ({ title, items, onItemClick 
           className={`absolute left-0 top-1/2 -translate-y-1/2 z-20 w-14 h-28 bg-black/70 backdrop-blur-md rounded-r-xl flex items-center justify-center transition-all duration-300 ${
             isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
           } hover:bg-apple-blue/80 hover:scale-105`}
+          aria-label="向左滚动"
         >
           <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -196,6 +310,7 @@ export const PosterRow: React.FC<PosterRowProps> = ({ title, items, onItemClick 
           className={`absolute right-0 top-1/2 -translate-y-1/2 z-20 w-14 h-28 bg-black/70 backdrop-blur-md rounded-l-xl flex items-center justify-center transition-all duration-300 ${
             isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'
           } hover:bg-apple-blue/80 hover:scale-105`}
+          aria-label="向右滚动"
         >
           <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
@@ -203,36 +318,29 @@ export const PosterRow: React.FC<PosterRowProps> = ({ title, items, onItemClick 
         </button>
       )}
 
-      {/* 海报滚动区域 */}
+      {/* 海报滚动区域 - 使用懒加载 */}
       <div
         ref={rowRef}
         onScroll={handleScroll}
         className="flex gap-5 px-2 overflow-x-auto scrollbar-hide"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {/* 左侧padding */}
         {showLeftArrow && <div className="w-2 flex-shrink-0" />}
 
         {items.map((item, index) => (
-          <div
+          <LazyPosterCard
             key={item.id}
-            className="transition-all duration-300"
-            style={{
-              transitionDelay: `${index * 50}ms`
-            }}
-          >
-            <PosterCard
-              item={item}
-              onClick={() => onItemClick(item)}
-            />
-          </div>
+            item={item}
+            onClick={() => onItemClick(item)}
+            index={index}
+            containerRef={rowRef}
+          />
         ))}
 
-        {/* 右侧padding */}
         {showRightArrow && <div className="w-2 flex-shrink-0" />}
       </div>
 
-      {/* 底部渐变遮罩 - 提示可滚动 */}
+      {/* 底部渐变遮罩 */}
       <div className={`absolute right-0 top-0 bottom-6 w-16 bg-gradient-to-l from-apple-gray-900 to-transparent pointer-events-none transition-opacity duration-300 ${isHovered && showRightArrow ? 'opacity-100' : 'opacity-0'}`} />
     </div>
   );

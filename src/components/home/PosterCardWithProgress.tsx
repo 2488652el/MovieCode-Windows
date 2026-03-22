@@ -1,7 +1,68 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getImageUrl } from '@/services/api/tmdb';
+import { imageCache } from '@/services/imageCache';
 import type { MediaItem } from '@/types';
 import { usePlayerStore, useHistoryStore } from '@/stores';
+
+/**
+ * 懒加载海报图片组件
+ */
+const LazyPosterImage: React.FC<{ posterPath: string; title: string }> = ({ posterPath, title }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState<string>('');
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: '200px', threshold: 0.01 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (isVisible && posterPath) {
+      const originalUrl = getImageUrl(posterPath, 'w500') || '';
+      imageCache.getImageUrl(originalUrl).then((cachedUrl) => {
+        setCurrentSrc(cachedUrl || originalUrl);
+      }).catch(() => {
+        setCurrentSrc(originalUrl);
+      });
+    }
+  }, [isVisible, posterPath]);
+
+  return (
+    <div ref={containerRef} className="w-full h-full">
+      {!isLoaded && (
+        <div className="w-full h-full skeleton animate-pulse" />
+      )}
+      {currentSrc && (
+        <img
+          src={currentSrc}
+          alt={title}
+          className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          loading="lazy"
+          onLoad={() => setIsLoaded(true)}
+        />
+      )}
+    </div>
+  );
+};
 
 interface PosterCardProps {
   item: MediaItem;
@@ -16,6 +77,7 @@ export const PosterCardWithProgress: React.FC<PosterCardProps> = ({
   size = 'medium',
   showProgress = true 
 }) => {
+
   const { setCurrentMedia } = usePlayerStore();
   const { getEntry } = useHistoryStore();
 
@@ -63,15 +125,10 @@ export const PosterCardWithProgress: React.FC<PosterCardProps> = ({
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
     >
-      {/* 海报图片 */}
+      {/* 海报图片 - 使用懒加载 */}
       <div className="relative w-full h-full rounded-xl overflow-hidden bg-apple-gray-800">
         {item.posterPath ? (
-          <img
-            src={getImageUrl(item.posterPath, 'w500') || ''}
-            alt={item.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            loading="lazy"
-          />
+          <LazyPosterImage posterPath={item.posterPath} title={item.title} />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-apple-gray-700 to-apple-gray-800">
             <svg className="w-12 h-12 text-apple-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
