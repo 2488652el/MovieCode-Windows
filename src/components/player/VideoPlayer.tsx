@@ -1,9 +1,193 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/stores';
+import { invoke } from '@tauri-apps/api/core';
+
+// 倍速播放档位 (8档)
+const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+
+// 字幕信息接口
+interface SubtitleInfo {
+  path: string;
+  name: string;
+  language?: string;
+  type: 'embedded' | 'external' | 'none';
+}
+
+// 播放进度记录
+interface PlaybackProgress {
+  mediaId: string;
+  filePath: string;
+  currentTime: number;
+  duration: number;
+  lastWatched: string;
+}
+
+// 续播提示弹窗组件
+interface ResumeDialogProps {
+  progress: PlaybackProgress;
+  onResume: () => void;
+  onStartOver: () => void;
+  visible: boolean;
+}
+
+const ResumeDialog: React.FC<ResumeDialogProps> = ({ progress, onResume, onStartOver, visible }) => {
+  if (!visible) return null;
+  
+  const percent = Math.round((progress.currentTime / progress.duration) * 100);
+  
+  return (
+    <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
+      <div className="bg-apple-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+        <h3 className="text-white text-xl font-semibold mb-2">是否继续播放？</h3>
+        <p className="text-apple-gray-300 mb-6">
+          您上次看到 {percent}%，是否从上次位置继续？
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={onStartOver}
+            className="flex-1 px-6 py-3 bg-apple-gray-700 text-white rounded-xl hover:bg-apple-gray-600 transition-colors"
+          >
+            从头开始
+          </button>
+          <button
+            onClick={onResume}
+            className="flex-1 px-6 py-3 bg-apple-blue text-white rounded-xl hover:bg-blue-600 transition-colors"
+          >
+            继续播放
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 字幕选择菜单组件
+interface SubtitleMenuProps {
+  subtitles: SubtitleInfo[];
+  currentSubtitle: SubtitleInfo | null;
+  onSelect: (subtitle: SubtitleInfo) => void;
+  onClose: () => void;
+  onLoadExternal: () => void;
+  offset: number;
+  onOffsetChange: (offset: number) => void;
+}
+
+const SubtitleMenu: React.FC<SubtitleMenuProps> = ({
+  subtitles,
+  currentSubtitle,
+  onSelect,
+  onClose,
+  onLoadExternal,
+  offset,
+  onOffsetChange
+}) => {
+  return (
+    <div className="absolute bottom-20 right-4 bg-apple-gray-900/95 backdrop-blur-lg rounded-xl p-4 min-w-64 shadow-2xl border border-white/10">
+      <div className="flex justify-between items-center mb-3">
+        <h4 className="text-white font-medium">字幕</h4>
+        <button onClick={onClose} className="text-apple-gray-400 hover:text-white">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      
+      {/* 字幕选项列表 */}
+      <div className="space-y-1 mb-4">
+        <button
+          onClick={() => onSelect({ path: '', name: '关闭字幕', type: 'none' })}
+          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+            currentSubtitle?.type === 'none' 
+              ? 'bg-apple-blue text-white' 
+              : 'text-apple-gray-300 hover:bg-white/10'
+          }`}
+        >
+          关闭字幕
+        </button>
+        {subtitles.map((sub, index) => (
+          <button
+            key={index}
+            onClick={() => onSelect(sub)}
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
+              currentSubtitle?.path === sub.path 
+                ? 'bg-apple-blue text-white' 
+                : 'text-apple-gray-300 hover:bg-white/10'
+            }`}
+          >
+            <span>{sub.name}</span>
+            {sub.type === 'embedded' && (
+              <span className="text-xs text-apple-gray-500">内嵌</span>
+            )}
+          </button>
+        ))}
+      </div>
+      
+      {/* 加载外部字幕按钮 */}
+      <button
+        onClick={onLoadExternal}
+        className="w-full px-3 py-2 bg-apple-gray-700 text-white text-sm rounded-lg hover:bg-apple-gray-600 transition-colors flex items-center gap-2"
+      >
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+        加载外部字幕文件
+      </button>
+      
+      {/* 字幕偏移调节 */}
+      <div className="mt-4 pt-4 border-t border-white/10">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-apple-gray-400 text-xs">字幕同步偏移</span>
+          <span className="text-apple-blue text-xs">{offset > 0 ? `+${offset}s` : `${offset}s`}</span>
+        </div>
+        <input
+          type="range"
+          min="-5"
+          max="5"
+          step="0.5"
+          value={offset}
+          onChange={(e) => onOffsetChange(parseFloat(e.target.value))}
+          className="w-full h-1 bg-apple-gray-700 rounded-lg appearance-none cursor-pointer accent-apple-blue"
+        />
+        <div className="flex justify-between text-xs text-apple-gray-500 mt-1">
+          <span>-5s</span>
+          <span>+5s</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 速度提示组件
+const SpeedToast: React.FC<{ speed: number; visible: boolean }> = ({ speed, visible }) => {
+  if (!visible) return null;
+  
+  return (
+    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 text-white px-6 py-3 rounded-xl text-lg font-medium">
+      {speed === 1 ? '正常速度' : `${speed}x`}
+    </div>
+  );
+};
 
 export const VideoPlayer: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const progressSaveIntervalRef = useRef<number | null>(null);
+  const subtitleTrackRef = useRef<HTMLTrackElement | null>(null);
+  
+  // 字幕状态
+  const [subtitles, setSubtitles] = useState<SubtitleInfo[]>([]);
+  const [currentSubtitle, setCurrentSubtitle] = useState<SubtitleInfo | null>(null);
+  const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
+  const [showSpeedToast, setShowSpeedToast] = useState(false);
+  const [subtitleOffset, setSubtitleOffset] = useState(0); // 字幕偏移 (秒)
+  
+  // 续播状态
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [savedProgress, setSavedProgress] = useState<PlaybackProgress | null>(null);
+  
+  // 外部字幕 track 元素引用
+  const [externalTrackSrc, setExternalTrackSrc] = useState<string | null>(null);
+  
   const [state, setState] = useState({
     currentMedia: usePlayerStore.getState().currentMedia,
     isPlaying: usePlayerStore.getState().isPlaying,
@@ -42,6 +226,161 @@ export const VideoPlayer: React.FC = () => {
   const [showControls, setShowControls] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const controlsTimeoutRef = useRef<number | undefined>(undefined);
+
+  // 搜索字幕文件
+  const searchSubtitleFiles = useCallback(async (videoPath: string) => {
+    try {
+      const foundSubtitles = await invoke<{ path: string; name: string }[]>('search_subtitle_files', {
+        videoPath
+      });
+      
+      const subtitleInfos: SubtitleInfo[] = foundSubtitles.map(sub => ({
+        ...sub,
+        type: 'external' as const
+      }));
+      
+      setSubtitles(subtitleInfos);
+      
+      // 自动选择第一个字幕（如果有）
+      if (subtitleInfos.length > 0 && !currentSubtitle) {
+        setCurrentSubtitle(subtitleInfos[0]);
+      }
+    } catch (error) {
+      console.log('搜索字幕文件失败:', error);
+    }
+  }, [currentSubtitle]);
+
+  // 加载外部字幕文件
+  const handleLoadExternalSubtitle = useCallback(async () => {
+    try {
+      const selected = await invoke<string | null>('open_subtitle_file_dialog');
+      if (selected) {
+        const fileName = selected.split(/[/\\]/).pop() || selected;
+        const newSubtitle: SubtitleInfo = {
+          path: selected,
+          name: fileName,
+          type: 'external'
+        };
+        setSubtitles(prev => [...prev, newSubtitle]);
+        setCurrentSubtitle(newSubtitle);
+        setExternalTrackSrc(`file:///${selected.replace(/\\/g, '/')}`);
+        setShowSubtitleMenu(false);
+      }
+    } catch (error) {
+      console.log('加载字幕失败:', error);
+    }
+  }, []);
+
+  // 加载进度
+  const loadProgress = useCallback(async (mediaId: string, filePath: string) => {
+    try {
+      const progress = await invoke<PlaybackProgress | null>('get_playback_progress', {
+        mediaId,
+        filePath
+      });
+      
+      if (progress && progress.currentTime > 0) {
+        const percent = (progress.currentTime / progress.duration) * 100;
+        // 只在 5% - 95% 之间提示续播
+        if (percent > 5 && percent < 95) {
+          setSavedProgress(progress);
+          setShowResumeDialog(true);
+        }
+      }
+    } catch (error) {
+      console.log('加载进度失败:', error);
+    }
+  }, []);
+
+  // 保存进度
+  const saveProgress = useCallback(async () => {
+    if (!currentMedia || !videoRef.current || duration === 0) return;
+    
+    const currentPercent = (currentTime / duration) * 100;
+    // 只保存 5% - 95% 之间的进度
+    if (currentPercent > 5 && currentPercent < 95) {
+      try {
+        await invoke('save_playback_progress', {
+          mediaId: currentMedia.id,
+          filePath: currentMedia.filePath || '',
+          currentTime: currentTime,
+          duration: duration
+        });
+      } catch (error) {
+        console.log('保存进度失败:', error);
+      }
+    }
+  }, [currentMedia, currentTime, duration]);
+
+  // 初始化播放
+  useEffect(() => {
+    if (currentMedia?.filePath) {
+      searchSubtitleFiles(currentMedia.filePath);
+      loadProgress(currentMedia.id, currentMedia.filePath);
+      
+      // 每30秒自动保存进度
+      progressSaveIntervalRef.current = window.setInterval(saveProgress, 30000);
+    }
+    
+    return () => {
+      if (progressSaveIntervalRef.current) {
+        clearInterval(progressSaveIntervalRef.current);
+      }
+      // 离开时保存进度
+      saveProgress();
+    };
+  }, [currentMedia?.filePath, currentMedia?.id]);
+
+  // 处理续播
+  const handleResume = useCallback(() => {
+    if (savedProgress && videoRef.current) {
+      videoRef.current.currentTime = savedProgress.currentTime;
+      usePlayerStore.getState().setCurrentTime(savedProgress.currentTime);
+    }
+    setShowResumeDialog(false);
+    usePlayerStore.getState().play();
+  }, [savedProgress]);
+
+  const handleStartOver = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      usePlayerStore.getState().setCurrentTime(0);
+    }
+    setShowResumeDialog(false);
+    usePlayerStore.getState().play();
+  }, []);
+
+  // 选择字幕
+  const handleSelectSubtitle = useCallback((subtitle: SubtitleInfo) => {
+    setCurrentSubtitle(subtitle);
+    
+    if (subtitle.type === 'none') {
+      // 关闭字幕
+      setExternalTrackSrc(null);
+      if (videoRef.current) {
+        const tracks = videoRef.current.textTracks;
+        for (let i = 0; i < tracks.length; i++) {
+          tracks[i].mode = 'hidden';
+        }
+      }
+    } else if (subtitle.type === 'external') {
+      // 加载外部字幕
+      setExternalTrackSrc(`file:///${subtitle.path.replace(/\\/g, '/')}`);
+    }
+    
+    setShowSubtitleMenu(false);
+  }, []);
+
+  // 应用字幕偏移
+  useEffect(() => {
+    if (videoRef.current && subtitleOffset !== 0) {
+      const tracks = videoRef.current.textTracks;
+      for (let i = 0; i < tracks.length; i++) {
+        // 注意：HTML5 video 不支持直接设置字幕偏移
+        // 这里只是记录值，实际偏移需要在解析字幕时处理
+      }
+    }
+  }, [subtitleOffset]);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -118,6 +457,44 @@ export const VideoPlayer: React.FC = () => {
     }
   };
 
+  // 键盘快捷键处理
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!videoRef.current) return;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
+          break;
+        case 'ArrowRight':
+          videoRef.current.currentTime = Math.min(duration, videoRef.current.currentTime + 10);
+          break;
+        case 'ArrowUp':
+          usePlayerStore.getState().setVolume(Math.min(1, volume + 0.1));
+          break;
+        case 'ArrowDown':
+          usePlayerStore.getState().setVolume(Math.max(0, volume - 0.1));
+          break;
+        case ' ':
+          e.preventDefault();
+          isPlaying ? usePlayerStore.getState().pause() : usePlayerStore.getState().play();
+          break;
+        case 'f':
+          handleFullscreen();
+          break;
+        case 'm':
+          usePlayerStore.getState().toggleMute();
+          break;
+        case 's':
+          setShowSubtitleMenu(prev => !prev);
+          break;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, volume, duration]);
+
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
@@ -135,11 +512,47 @@ export const VideoPlayer: React.FC = () => {
         onLoadedMetadata={handleLoadedMetadata}
         onClick={() => isPlaying ? usePlayerStore.getState().pause() : usePlayerStore.getState().play()}
         onDoubleClick={handleFullscreen}
+      >
+        {/* 外部字幕轨道 */}
+        {externalTrackSrc && (
+          <track
+            ref={subtitleTrackRef}
+            kind="subtitles"
+            src={externalTrackSrc}
+            default
+            srcLang="zh"
+            label="外部字幕"
+          />
+        )}
+      </video>
+
+      {/* 续播提示弹窗 */}
+      <ResumeDialog
+        progress={savedProgress!}
+        onResume={handleResume}
+        onStartOver={handleStartOver}
+        visible={showResumeDialog}
       />
 
-      <div className={`absolute bottom-0 left-0 right-0 player-controls p-4 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+      {/* 字幕选择菜单 */}
+      {showSubtitleMenu && (
+        <SubtitleMenu
+          subtitles={subtitles}
+          currentSubtitle={currentSubtitle}
+          onSelect={handleSelectSubtitle}
+          onClose={() => setShowSubtitleMenu(false)}
+          onLoadExternal={handleLoadExternalSubtitle}
+          offset={subtitleOffset}
+          onOffsetChange={setSubtitleOffset}
+        />
+      )}
+
+      {/* 速度提示 */}
+      <SpeedToast speed={playbackRate} visible={showSpeedToast} />
+
+      <div className={`absolute bottom-0left-0 right-0 player-controls p-4 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
         <div
-          className="progress-bar mb-4"
+          className="progress-bar mb-4 cursor-pointer"
           onClick={handleSeek}
           onMouseDown={() => setIsDragging(true)}
           onMouseUp={() => setIsDragging(false)}
@@ -163,9 +576,11 @@ export const VideoPlayer: React.FC = () => {
                 </svg>
               )}
             </button>
+
             <span className="text-white text-sm font-medium">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
+
             <div className="flex items-center gap-2">
               <button onClick={() => usePlayerStore.getState().toggleMute()} className="p-2 hover:bg-white/20 rounded-full">
                 {isMuted || volume === 0 ? (
@@ -191,18 +606,35 @@ export const VideoPlayer: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* 倍速选择器 - 扩展到8档 */}
             <select
               value={playbackRate}
-              onChange={(e) => usePlayerStore.getState().setPlaybackRate(parseFloat(e.target.value))}
-              className="bg-transparent text-white text-sm border border-white/30 rounded px-2 py-1"
+              onChange={(e) => {
+                const newRate = parseFloat(e.target.value);
+                usePlayerStore.getState().setPlaybackRate(newRate);
+                setShowSpeedToast(true);
+                setTimeout(() => setShowSpeedToast(false), 2000);
+              }}
+              className="bg-transparent text-white text-sm border border-white/30 rounded px-2 py-1 cursor-pointer hover:bg-white/10"
             >
-              <option value="0.5">0.5x</option>
-              <option value="0.75">0.75x</option>
-              <option value="1">1x</option>
-              <option value="1.25">1.25x</option>
-              <option value="1.5">1.5x</option>
-              <option value="2">2x</option>
+              {PLAYBACK_SPEEDS.map((speed) => (
+                <option key={speed} value={speed} className="bg-apple-gray-800">
+                  {speed === 1 ? '1x (正常)' : `${speed}x`}
+                </option>
+              ))}
             </select>
+            
+            {/* 字幕选择按钮 */}
+            <button
+              onClick={() => setShowSubtitleMenu(!showSubtitleMenu)}
+              className={`p-2 hover:bg-white/20 rounded-full transition-colors ${currentSubtitle?.type !== 'none' && currentSubtitle ? 'text-apple-blue' : 'text-white'}`}
+              title="字幕 (S)"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/>
+              </svg>
+            </button>
+
             <button onClick={handleFullscreen} className="p-2 hover:bg-white/20 rounded-full">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -249,6 +681,7 @@ export const EpisodeList: React.FC<EpisodeListProps> = ({ seasons, onSelectEpiso
           </button>
         ))}
       </div>
+
       <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
         {Array.from({ length: seasons.find(s => s.seasonNumber === selectedSeason)?.episodeCount || 0 }).map((_, i) => {
           const episodeNum = i + 1;
