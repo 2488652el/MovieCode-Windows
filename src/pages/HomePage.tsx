@@ -1,32 +1,32 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PosterRow, PosterRowSkeleton } from '@/components/home/PosterWall';
 import { useMediaStore, useParentalControlsStore } from '@/stores';
 import type { MediaItem } from '@/types';
 import { getBackdropUrl } from '@/services/api/tmdb';
 
-// 濯掍綋鍒嗙被绫诲瀷
+// 媒体分类类型
 type MediaCategory = 'all' | 'movie' | 'tv' | 'anime';
 
-// 鍒嗙被閰嶇疆
+// 分类配置
 const categoryConfig: Record<MediaCategory, { label: string; icon: string; gradient: string }> = {
   all: {
-    label: '鎺ㄨ崘',
-    icon: '馃彔',
+    label: '推荐',
+    icon: '🏠',
     gradient: 'gradient-all'
   },
   movie: {
-    label: '鐢靛奖',
-    icon: '馃幀',
+    label: '电影',
+    icon: '🎬',
     gradient: 'gradient-movies'
   },
   tv: {
-    label: '鐢佃鍓?,
-    icon: '馃摵',
+    label: '电视剧',
+    icon: '📺',
     gradient: 'gradient-tv'
   },
   anime: {
-    label: '鍔ㄦ极',
-    icon: '猸?,
+    label: '动漫',
+    icon: '🐱',
     gradient: 'gradient-anime'
   }
 };
@@ -36,103 +36,104 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
-  const { items, isLoading, searchQuery, setSearchQuery, getFilteredItems } = useMediaStore();`n  const { isContentAllowed } = useParentalControlsStore();
+  const { items, isLoading, searchQuery, setSearchQuery, getFilteredItems } = useMediaStore();
+  const { isContentAllowed } = useParentalControlsStore();
   const [currentCategory, setCurrentCategory] = useState<MediaCategory>('all');
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const carouselRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // 鍒濆鍖栨紨绀烘暟鎹?
+  // 初始化演示数据
   useEffect(() => {
     if (items.length === 0) {
       const demoItems: MediaItem[] = [
         {
           id: '1',
-          title: '鑲栫敵鍏嬬殑鏁戣祹',
+          title: '肖申克的救赎',
           originalTitle: 'The Shawshank Redemption',
           type: 'movie',
           year: 1994,
           posterPath: '/9cqNxx0GxF0bflZmeSMuL5tnGzr.jpg',
           backdropPath: '/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg',
-          overview: '涓€鍦鸿皨鏉€妗堜娇閾惰瀹跺畨杩挋鍐ゅ叆鐙憋紝琚垽缁堣韩鐩戠銆傚湪闀胯揪20骞寸殑鍥氱涓紝瀹夎开濮嬬粓娌℃湁鏀惧純瀵硅嚜鐢辩殑娓存湜锛屽鏅烘収鐨勮拷姹傘€?,
+          overview: '一场误判引发的越狱与自我救赎。在长达20年的囚禁中，安迪始终没有放弃对自由的渴望，凭借才华与智慧在黑暗中找到光明。',
           voteAverage: 8.7,
           tmdbId: 278,
-          genres: [{ id: 18, name: '鍓ф儏' }, { id: 80, name: '鐘姜' }],
+          genres: [{ id: 18, name: '剧情' }, { id: 80, name: '犯罪' }],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
         {
           id: '2',
-          title: '鏁欑埗',
+          title: '教父',
           originalTitle: 'The Godfather',
           type: 'movie',
           year: 1972,
           posterPath: '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg',
           backdropPath: '/tmU7GeKVybMWFButWEGl2M4GeiP.jpg',
-          overview: '缁存墭路鍞惵锋煰閲屾槀鏄粦鎵嬪厷鏌噷鏄傚鏃忕殑棣栭锛屽甫棰嗗鏃忎粠浜嬮潪娉曠殑鍕惧綋锛屼絾浠栧唴蹇冨杽鑹€?,
+          overview: '维托·唐·柯里昂是黑手党柯里昂家族的首领，但他内心善良。他从黑手党家族的兴衰中，展现了一个关于家庭、权力与救赎的故事。',
           voteAverage: 8.7,
           tmdbId: 238,
-          genres: [{ id: 18, name: '鍓ф儏' }, { id: 80, name: '鐘姜' }],
+          genres: [{ id: 18, name: '剧情' }, { id: 80, name: '犯罪' }],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
         {
           id: '3',
-          title: '鎸囩幆鐜嬶細鐜嬭€呮棤鏁?,
+          title: '指环王：王者无敌',
           originalTitle: 'The Lord of the Rings',
           type: 'movie',
           year: 2003,
           posterPath: '/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg',
           backdropPath: '/2u7zbn8EudG6kLlBzUYqP8RyFU4.jpg',
-          overview: '榄旀垝涓夐儴鏇茬殑鏈€缁堢珷銆傜敇閬撳か鍜岄樋鎷夎础甯﹂杩滃緛鍐涘墠寰€鍒氶搸锛屼笌绱鸡鐨勫啗闃熻繘琛屾渶缁堝喅鎴樸€?,
+          overview: '指环王三部曲的最终章。阿拉贡和莱戈拉斯穿越中土世界，最终与黑暗魔君索伦的军队决战。',
           voteAverage: 8.5,
           tmdbId: 122,
-          genres: [{ id: 12, name: '鍐掗櫓' }, { id: 14, name: '濂囧够' }, { id: 28, name: '鍔ㄤ綔' }],
+          genres: [{ id: 12, name: '冒险' }, { id: 14, name: '奇幻' }, { id: 28, name: '动作' }],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
         {
           id: '4',
-          title: '鐩楁ⅵ绌洪棿',
+          title: '盗梦空间',
           originalTitle: 'Inception',
           type: 'movie',
           year: 2010,
           posterPath: '/edv5CZvWj09upOsy2Y6IwDhK8bt.jpg',
           backdropPath: '/s3TBrRGB1iav7gFOCNx3H31MoES.jpg',
-          overview: '閬撳路鏌竷鏄竴浣嶇粡楠岃€侀亾鐨勭獌璐硷紝涓撻棬浠庝粬浜哄唴蹇冪洍鍙栫弽璐电殑绉樺瘑銆?,
+          overview: '柯布是以为经经验的盗梦师，专门从他人的内心中盗取反锁的秘密。',
           voteAverage: 8.4,
           tmdbId: 27205,
-          genres: [{ id: 28, name: '鍔ㄤ綔' }, { id: 878, name: '绉戝够' }],
+          genres: [{ id: 28, name: '动作' }, { id: 878, name: '科幻' }],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
         {
           id: '5',
-          title: '杩涘嚮鐨勫法浜?,
+          title: '进击的巨人',
           originalTitle: 'Attack on Titan',
           type: 'anime',
           year: 2013,
           posterPath: '/arN0O8MNXtL4ZqQBwfXmHp7RrM8.jpg',
           backdropPath: '/x2RS3uTcsJJ9IfjNPcgDmukoEcQ.jpg',
-          overview: '鍦ㄩ仴杩滅殑杩囧幓锛屼汉绫绘浘涓€搴﹀洜琚法浜烘崟椋熻€屽穿婧冦€傚垢瀛樹笅鏉ョ殑浜轰滑寤洪€犱簡涓夐噸宸ㄥぇ鐨勫煄澧欐潵闃插尽宸ㄤ汉鐨勫叆渚点€?,
+          overview: '在遥远的过去，人类曾因被巨人捕食而崩溃。幸存下来的人们建造了三重巨大的城墙来防御巨人的入侵。',
           voteAverage: 9.0,
           tmdbId: 1429,
-          genres: [{ id: 16, name: '鍔ㄧ敾' }, { id: 10765, name: '濂囧够' }],
+          genres: [{ id: 16, name: '动画' }, { id: 10765, name: '奇幻' }],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
         {
           id: '6',
-          title: '缁濆懡姣掑笀',
+          title: '绝命毒师',
           originalTitle: 'Breaking Bad',
           type: 'tv',
           year: 2008,
           posterPath: '/ggFHVNu6YYI5L9pCfOacjizRGt.jpg',
           backdropPath: '/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg',
-          overview: '鍖栧鑰佸笀娌冨皵鐗孤锋€€鐗瑰洜韬偅鐧岀棁锛屽啀鍔犱笂鐢熸椿鎵€杩紝璧颁笂浜嗗埗姣掕穿姣掔殑閬撹矾銆?,
+          overview: '化学老师沃尔特·怀特因肺癌晚期，加上生活所迫，踏上了一条制毒贩毒的犯罪道路。',
           voteAverage: 9.3,
           tmdbId: 1396,
-          genres: [{ id: 18, name: '鍓ф儏' }, { id: 80, name: '鐘姜' }],
+          genres: [{ id: 18, name: '剧情' }, { id: 80, name: '犯罪' }],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
@@ -141,20 +142,20 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
     }
   }, []);
 
-  // 鏍规嵁鍒嗙被绛涢€夎疆鎾暟鎹?
+  // 根据分类筛选轮播数据
   const getCarouselItems = useCallback(() => {
     const filtered = getFilteredItems();
     const categoryItems = currentCategory === 'all'
       ? filtered
       : filtered.filter(item => item.type === (currentCategory === 'anime' ? 'anime' : currentCategory));
 
-    // 鏈€澶氭樉绀?涓疆鎾」
+    // 最多显示4个轮播项
     return categoryItems.slice(0, 4);
   }, [items, currentCategory, searchQuery]);
 
   const carouselItems = getCarouselItems();
 
-  // 鑷姩杞挱
+  // 自动轮播
   useEffect(() => {
     if (isAutoPlaying && carouselItems.length > 1) {
       carouselRef.current = setInterval(() => {
@@ -169,7 +170,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
     };
   }, [isAutoPlaying, carouselItems.length]);
 
-  // 杞挱瀵艰埅
+  // 轮播导航
   const goToSlide = (index: number) => {
     setCarouselIndex(index);
     setIsAutoPlaying(false);
@@ -188,13 +189,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
     setTimeout(() => setIsAutoPlaying(true), 10000);
   };
 
-  // 鏍规嵁鍒嗙被绛涢€夊唴瀹?
-  const filteredItems = getFilteredItems();`n  `n  // 应用家长控制过滤`n  const parentalFilteredItems = filteredItems.filter(item => isContentAllowed(item));
+  // 根据分类筛选内容
+  const filteredItems = getFilteredItems();
+
+  // 应用家长控制过滤
+  const parentalFilteredItems = filteredItems.filter(item => isContentAllowed(item));
   const getCategoryItems = (category: MediaCategory, items: MediaItem[]) => {
     if (category === 'all') return items;
     return items.filter(item => item.type === category);
-  };
-    return filteredItems.filter(item => item.type === category);
   };
 
   const categoryItems = getCategoryItems(currentCategory, parentalFilteredItems);
@@ -204,19 +206,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   ).slice(0, 10);
 
-  // 褰撳墠杞挱椤?
+  // 当前轮播页面
   const currentHero = carouselItems[carouselIndex];
 
   return (
     <div className="h-full overflow-hidden flex flex-col bg-apple-gray-900">
-      {/* Hero 杞挱鍖哄煙 */}
+      {/* Hero 轮播区域 */}
       {currentHero && (
         <div
           className="hero-carousel flex-shrink-0"
           onMouseEnter={() => setIsAutoPlaying(false)}
           onMouseLeave={() => setIsAutoPlaying(true)}
         >
-          {/* 杞挱鍥剧墖 */}
+          {/* 轮播图片 */}
           {carouselItems.map((item, index) => (
             <div
               key={item.id}
@@ -232,18 +234,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
                 <div className="w-full h-full bg-gradient-to-br from-apple-gray-800 to-apple-gray-900" />
               )}
 
-              {/* 澶氬眰娓愬彉鍙犲姞 */}
+              {/* 多层渐变叠加 */}
               <div className="absolute inset-0 gradient-hero-overlay" />
               <div className="absolute inset-0 gradient-hero-bottom" />
               <div className="absolute inset-0 gradient-hero-left" />
 
-              {/* 鍐呭 */}
+              {/* 内容 */}
               <div className="hero-content">
                 <div className="max-w-4xl">
-                  {/* 濯掍綋绫诲瀷鏍囩 */}
+                  {/* 媒体类型标签 */}
                   <div className="flex items-center gap-3 mb-4">
                     <span className={`media-tag ${item.type}`}>
-                      {item.type === 'movie' ? '馃幀 鐢靛奖' : item.type === 'tv' ? '馃摵 鍓ч泦' : '猸?鍔ㄦ极'}
+                      {item.type === 'movie' ? '🎬 电影' : item.type === 'tv' ? '📺 电视剧' : '🐱 动漫'}
                     </span>
                     {item.voteAverage && (
                       <span className="rating-badge">
@@ -258,19 +260,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
                     )}
                   </div>
 
-                  {/* 鏍囬 */}
+                  {/* 标题 */}
                   <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-lg">
                     {item.title}
                   </h1>
 
-                  {/* 绠€浠?*/}
+                  {/* 简介 */}
                   {item.overview && (
                     <p className="text-apple-gray-200 text-base leading-relaxed mb-6 max-w-2xl line-clamp-2">
                       {item.overview}
                     </p>
                   )}
 
-                  {/* 鎿嶄綔鎸夐挳 */}
+                  {/* 操作按钮 */}
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => onItemSelect(item)}
@@ -279,13 +281,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z" />
                       </svg>
-                      绔嬪嵆鎾斁
+                      立即播放
                     </button>
                     <button className="btn-secondary">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
-                      璇︽儏
+                      详情
                     </button>
                   </div>
                 </div>
@@ -293,7 +295,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
             </div>
           ))}
 
-          {/* 杞挱瀵艰埅鎸夐挳 */}
+          {/* 轮播导航按钮 */}
           {carouselItems.length > 1 && (
             <>
               <button onClick={prevSlide} className="carousel-nav prev">
@@ -309,7 +311,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
             </>
           )}
 
-          {/* 杞挱鎸囩ず鍣?*/}
+          {/* 轮播指示器 */}
           {carouselItems.length > 1 && (
             <div className="carousel-indicators absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
               {carouselItems.map((_, index) => (
@@ -324,12 +326,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
         </div>
       )}
 
-      {/* 鍒嗙被绛涢€?+ 鍐呭鍖哄煙 */}
+      {/* 分类筛选 + 内容区域 */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        {/* 鍒嗙被Tab鏍?*/}
+        {/* 分类Tab栏 */}
         <div className="flex-shrink-0 px-6 py-4 border-b border-white/5">
           <div className="flex items-center justify-between">
-            {/* 宸︿晶鍒嗙被Tab */}
+            {/* 左侧分类Tab */}
             <div className="flex items-center gap-2">
               {(Object.keys(categoryConfig) as MediaCategory[]).map((category) => (
                 <button
@@ -343,7 +345,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
               ))}
             </div>
 
-            {/* 鍙充晶鎼滅储鏍?*/}
+            {/* 右侧搜索框 */}
             <div className="flex items-center gap-4">
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -351,7 +353,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
                 </svg>
                 <input
                   type="text"
-                  placeholder="鎼滅储鐢靛奖銆佺數瑙嗗墽..."
+                  placeholder="搜索电影、电视剧..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="input-field pl-10 w-64"
@@ -361,7 +363,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
           </div>
         </div>
 
-        {/* 鍐呭婊氬姩鍖哄煙 */}
+        {/* 内容滚动区域 */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
           {isLoading ? (
             <>
@@ -371,29 +373,29 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
             </>
           ) : (
             <>
-              {/* 鍒嗙被Header */}
+              {/* 分类Header */}
               <div className={`mb-6 p-6 rounded-2xl ${categoryConfig[currentCategory].gradient}`}>
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{categoryConfig[currentCategory].icon}</span>
                   <div>
                     <h2 className="text-xl font-bold text-white">
-                      {currentCategory === 'all' ? '绮鹃€夋帹鑽? :
-                       currentCategory === 'movie' ? '绮惧僵鐢靛奖' :
-                       currentCategory === 'tv' ? '鐑棬鍓ч泦' : '鐑棬鍔ㄦ极'}
+                      {currentCategory === 'all' ? '精选推荐' :
+                       currentCategory === 'movie' ? '精彩电影' :
+                       currentCategory === 'tv' ? '热门剧集' : '热门动漫'}
                     </h2>
                     <p className="text-apple-gray-400 text-sm mt-1">
-                      {categoryItems.length} 閮ㄥ奖鐗囩瓑浣犲彂鐜?
+                      {categoryItems.length} 部电影等你发现
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* 娴锋姤琛?*/}
+              {/* 海报墙 */}
               {categoryItems.length > 0 ? (
                 <PosterRow
-                  title={currentCategory === 'all' ? '鏈€杩戞洿鏂? :
-                         currentCategory === 'movie' ? '鐢靛奖鍒楄〃' :
-                         currentCategory === 'tv' ? '鍓ч泦鍒楄〃' : '鍔ㄦ极鍒楄〃'}
+                  title={currentCategory === 'all' ? '最新更新' :
+                         currentCategory === 'movie' ? '电影列表' :
+                         currentCategory === 'tv' ? '剧集列表' : '动漫列表'}
                   items={categoryItems}
                   onItemClick={onItemSelect}
                 />
@@ -402,16 +404,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
                   <svg className="w-20 h-20 mx-auto text-apple-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
                   </svg>
-                  <h3 className="text-xl text-white mb-2">鏆傛棤濯掍綋</h3>
-                  <p className="text-apple-gray-400">璇峰湪璁剧疆涓坊鍔燦AS杩炴帴骞舵壂鎻忓獟浣撳簱</p>
+                  <h3 className="text-xl text-white mb-2">暂无媒体</h3>
+                  <p className="text-apple-gray-400">请在设置中添加NAS连接并扫描媒体库</p>
                 </div>
               )}
 
-              {/* 鍒嗙被鏃舵樉绀哄叾浠栧垎绫荤殑鎺ㄨ崘 */}
+              {/* 分类时显示其他分类的推荐 */}
               {currentCategory !== 'all' && recentlyAdded.length > 0 && (
                 <div className="mt-8">
                   <div className="divider mb-6" />
-                  <PosterRow title="浣犲彲鑳借繕鍠滄" items={recentlyAdded.slice(0, 6)} onItemClick={onItemSelect} />
+                  <PosterRow title="你可能还喜欢" items={recentlyAdded.slice(0, 6)} onItemClick={onItemSelect} />
                 </div>
               )}
             </>
@@ -421,8 +423,3 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
     </div>
   );
 };
-
-
-
-
-
