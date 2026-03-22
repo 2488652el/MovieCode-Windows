@@ -1,7 +1,7 @@
 # MovieCode - Windows 媒体中心应用
 
 <div align="center">
-  <img src="public/tauri.svg" alt="MovieCode Logo" width="120" />
+  <img src="public/logo.png" alt="MovieCode Logo" width="180" />
 
   **一款专为 Windows 设计的本地媒体中心，支持 NAS 连接、海报墙浏览和 TMDB 元数据增强。**
 
