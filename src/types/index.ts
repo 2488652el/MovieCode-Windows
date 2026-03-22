@@ -231,3 +231,28 @@ export interface PlayerState {
   playbackRate: number;
   buffered: number;
 }
+
+// 播放历史记录
+export interface PlayHistoryEntry {
+  mediaId: string;
+  title: string;
+  type: MediaType;
+  posterPath?: string;
+  backdropPath?: string;
+  currentTime: number;
+  duration: number;
+  progress: number;
+  lastWatched: number;
+  episodeNumber?: number;
+  seasonNumber?: number;
+}
+
+// 主题模式
+export type ThemeMode = 'dark' | 'light' | 'system';
+
+// 主题设置
+export interface ThemeSettings {
+  mode: ThemeMode;
+  autoDarkStart: string;
+  autoDarkEnd: string;
+}

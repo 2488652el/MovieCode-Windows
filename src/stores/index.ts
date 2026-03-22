@@ -221,3 +221,104 @@ export const useUIStore = create<UIStore>((set) => ({
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setCurrentTab: (tab) => set({ currentTab: tab }),
 }));
+
+// ==================== 播放历史 Store ====================
+const MAX_HISTORY = 50;
+
+interface HistoryStore {
+  entries: PlayHistoryEntry[];
+  addEntry: (entry: PlayHistoryEntry) => void;
+  removeEntry: (mediaId: string) => void;
+  updateProgress: (mediaId: string, currentTime: number, duration: number) => void;
+  clearHistory: () => void;
+  getEntry: (mediaId: string) => PlayHistoryEntry | undefined;
+  getRecentEntries: (limit?: number) => PlayHistoryEntry[];
+}
+
+export const useHistoryStore = create<HistoryStore>()(
+  persist(
+    (set, get) => ({
+      entries: [],
+      
+      addEntry: (entry) => set((state) => {
+        const existingIndex = state.entries.findIndex(e => e.mediaId === entry.mediaId);
+        let newEntries = [...state.entries];
+        
+        if (existingIndex !== -1) {
+          newEntries.splice(existingIndex, 1);
+        }
+        
+        newEntries.unshift({ ...entry, lastWatched: Date.now() });
+        
+        if (newEntries.length > MAX_HISTORY) {
+          newEntries = newEntries.slice(0, MAX_HISTORY);
+        }
+        
+        return { entries: newEntries };
+      }),
+      
+      removeEntry: (mediaId) => set((state) => ({
+        entries: state.entries.filter(e => e.mediaId !== mediaId)
+      })),
+      
+      updateProgress: (mediaId, currentTime, duration) => set((state) => ({
+        entries: state.entries.map(e => 
+          e.mediaId === mediaId 
+            ? { ...e, currentTime, duration, progress: duration > 0 ? (currentTime / duration) * 100 : 0, lastWatched: Date.now() }
+            : e
+        )
+      })),
+      
+      clearHistory: () => set({ entries: [] }),
+      
+      getEntry: (mediaId) => get().entries.find(e => e.mediaId === mediaId),
+      
+      getRecentEntries: (limit = 10) => get().entries.slice(0, limit),
+    }),
+    { name: 'history-store' }
+  )
+);
+
+// ==================== 主题 Store ====================
+const defaultThemeSettings: ThemeSettings = {
+  mode: 'dark',
+  autoDarkStart: '22:00',
+  autoDarkEnd: '06:00',
+};
+
+interface ThemeStore {
+  settings: ThemeSettings;
+  isDark: boolean;
+  setThemeMode: (mode: ThemeMode) => void;
+  setAutoDarkTime: (start: string, end: string) => void;
+  updateIsDark: () => void;
+}
+
+export const useThemeStore = create<ThemeStore>()(
+  persist(
+    (set, get) => ({
+      settings: defaultThemeSettings,
+      isDark: true,
+      
+      setThemeMode: (mode) => set((state) => ({
+        settings: { ...state.settings, mode },
+        isDark: mode === 'dark' || (mode === 'system' && get().isDark)
+      })),
+      
+      setAutoDarkTime: (start, end) => set((state) => ({
+        settings: { ...state.settings, autoDarkStart: start, autoDarkEnd: end }
+      })),
+      
+      updateIsDark: () => {
+        const { settings } = get();
+        if (settings.mode === 'system') {
+          const now = new Date();
+          const currentTime = ${now.getHours().toString().padStart(2, '0')}:;
+          const isInDarkPeriod = currentTime >= settings.autoDarkStart || currentTime < settings.autoDarkEnd;
+          set({ isDark: isInDarkPeriod });
+        }
+      },
+    }),
+    { name: 'theme-store' }
+  )
+);
