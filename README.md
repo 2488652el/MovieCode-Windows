@@ -2,7 +2,7 @@
 
 <div align="center">
   <img src="public/tauri.svg" alt="MovieCode Logo" width="120" />
-  
+
   **一款专为 Windows 设计的本地媒体中心，支持 NAS 连接、海报墙浏览和 TMDB 元数据增强。**
 
   [English](./README.md) | 简体中文
@@ -10,6 +10,7 @@
   [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
   [![Tauri](https://img.shields.io/badge/Tauri-2.0-green.svg)](https://tauri.app/)
   [![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev/)
+  [![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases)
 </div>
 
 ---
@@ -23,6 +24,20 @@
 - ▶️ **内置播放** - 支持多种格式的本地/网络视频播放
 - 📱 **响应式设计** - 适配不同屏幕尺寸
 
+## 🎨 界面预览
+
+| 首页海报墙 | 详情页面 |
+|:---------:|:-------:|
+| ![Home](public/screenshot-home.png) | ![Player](public/screenshot-player.png) |
+
+### v2.0.0 UI 更新亮点
+
+- **Hero 轮播** - 自动轮播 + 手动切换
+- **分类 Tab 筛选** - 推荐 / 电影 / 电视剧 / 动漫
+- **渐变色彩系统** - 蓝紫渐变主题
+- **玻璃态导航栏** - backdrop-filter 毛玻璃效果
+- **焦点动画** - 1.08x 缩放 + 弹性动效
+
 ## 🚀 快速开始
 
 ### 前置要求
@@ -33,10 +48,9 @@
 ### 安装方式
 
 **方式一：安装包（推荐）**
-```bash
-# 下载并运行安装程序
-MovieCode_1.0.0_x64-setup.exe
-```
+
+[![Download](https://img.shields.io/badge/Download-NSIS_Installer-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases/download/v2.0.0/MovieCode_2.0.0_x64-setup.exe)
+[![Download](https://img.shields.io/badge/Download-MSI_Installer-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases/download/v2.0.0/MovieCode_2.0.0_x64_en-US.msi)
 
 **方式二：便携版**
 ```bash
@@ -48,8 +62,8 @@ MovieCode.exe
 
 ```bash
 # 克隆仓库
-git clone https://github.com/YOUR_USERNAME/moviecode.git
-cd moviecode
+git clone https://github.com/2488652el/MovieCode-Windows.git
+cd MovieCode-Windows
 
 # 安装依赖
 npm install
@@ -70,7 +84,7 @@ npm run tauri build
 ## 📁 项目结构
 
 ```
-moviecode/
+MovieCode-Windows/
 ├── src/                      # React 前端源码
 │   ├── components/           # UI 组件
 │   │   ├── layout/           # 布局组件
@@ -79,7 +93,7 @@ moviecode/
 │   │   └── settings/         # 设置组件
 │   ├── pages/                # 页面
 │   ├── stores/               # Zustand 状态管理
-│   ├── services/api/          # TMDB API 服务
+│   ├── services/api/         # TMDB API 服务
 │   └── types/                # TypeScript 类型定义
 ├── src-tauri/                # Rust 后端源码
 │   └── src/
@@ -97,15 +111,9 @@ moviecode/
 | 前端框架 | React 18 + TypeScript |
 | 构建工具 | Vite |
 | 状态管理 | Zustand |
-| 样式方案 | Tailwind CSS (Apple风格) |
+| 样式方案 | Tailwind CSS (Apple TV 风格) |
 | 后端语言 | Rust |
 | 元数据 | TMDB API |
-
-## 🎨 界面预览
-
-| 首页海报墙 | 播放页面 |
-|:---------:|:-------:|
-| ![Home](public/screenshot-home.png) | ![Player](public/screenshot-player.png) |
 
 ## 🤝 贡献指南
 

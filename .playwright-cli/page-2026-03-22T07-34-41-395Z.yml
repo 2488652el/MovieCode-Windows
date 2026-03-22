@@ -1,0 +1,138 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - img [ref=e6]
+      - generic [ref=e8]:
+        - generic [ref=e9]: MovieCode
+        - generic [ref=e10]: MEDIA CENTER
+    - navigation [ref=e11]:
+      - button "媒体库" [ref=e12] [cursor=pointer]:
+        - img [ref=e13]
+        - generic [ref=e15]: 媒体库
+      - button "设置" [ref=e16] [cursor=pointer]:
+        - img [ref=e17]
+        - generic [ref=e20]: 设置
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - generic [ref=e23]: Ctrl
+        - generic [ref=e24]: K
+        - generic [ref=e25]: 搜索
+      - button [ref=e26] [cursor=pointer]:
+        - img [ref=e27]
+      - generic [ref=e30]: U
+  - main [ref=e31]:
+    - generic [ref=e32]:
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - generic [ref=e40]: 电影
+          - generic [ref=e41]: "8.7"
+          - generic [ref=e42]: "1994"
+        - heading "进击的巨人" [level=1] [ref=e168]
+        - paragraph [ref=e44]: 一场谋杀案使银行家安迪蒙冤入狱，被判终身监禁。在长达20年的囚禁中，安迪始终没有放弃对自由的渴望，对智慧的追求。
+        - generic [ref=e45]:
+          - button "立即播放" [ref=e46] [cursor=pointer]:
+            - img [ref=e47]
+            - text: 立即播放
+          - button "详情" [ref=e49] [cursor=pointer]:
+            - img [ref=e50]
+            - text: 详情
+      - button [ref=e52] [cursor=pointer]:
+        - img [ref=e53]
+      - button [ref=e55] [cursor=pointer]:
+        - img [ref=e56]
+      - generic [ref=e58]:
+        - button [ref=e59] [cursor=pointer]
+        - button [ref=e60] [cursor=pointer]
+        - button [ref=e61] [cursor=pointer]
+        - button [ref=e62] [cursor=pointer]
+    - generic [ref=e63]:
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - button "推荐" [ref=e67] [cursor=pointer]
+          - button "电影" [ref=e68] [cursor=pointer]
+          - button "电视剧" [ref=e69] [cursor=pointer]
+          - button "动漫" [ref=e70] [cursor=pointer]
+        - generic [ref=e71]:
+          - img [ref=e72]
+          - textbox "搜索电影、电视剧..." [ref=e74]
+      - generic [ref=e75]:
+        - generic [ref=e78]:
+          - heading "精选推荐" [level=2] [ref=e79]
+          - paragraph [ref=e80]: 8 部影片等你发现
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - heading "最近更新" [level=2] [ref=e83]
+            - generic [ref=e85]: 8 部
+          - generic [ref=e86]:
+            - generic [ref=e88] [cursor=pointer]:
+              - img "肖申克的救赎" [ref=e89]
+              - generic [ref=e90]:
+                - generic [ref=e91]: 电影
+                - heading "肖申克的救赎" [level=3] [ref=e92]
+                - generic [ref=e93]:
+                  - generic [ref=e94]: "8.7"
+                  - generic [ref=e95]: "1994"
+                - button "播放" [ref=e96]
+            - generic [ref=e98] [cursor=pointer]:
+              - img "教父" [ref=e99]
+              - generic [ref=e100]:
+                - generic [ref=e101]: 电影
+                - heading "教父" [level=3] [ref=e102]
+                - generic [ref=e103]:
+                  - generic [ref=e104]: "8.7"
+                  - generic [ref=e105]: "1972"
+                - button "播放" [ref=e106]
+            - generic [ref=e108] [cursor=pointer]:
+              - img "指环王" [ref=e109]
+              - generic [ref=e110]:
+                - generic [ref=e111]: 电影
+                - heading "指环王" [level=3] [ref=e112]
+                - generic [ref=e113]:
+                  - generic [ref=e114]: "8.5"
+                  - generic [ref=e115]: "2003"
+                - button "播放" [ref=e116]
+            - generic [ref=e118] [cursor=pointer]:
+              - img "盗梦空间" [ref=e119]
+              - generic [ref=e120]:
+                - generic [ref=e121]: 电影
+                - heading "盗梦空间" [level=3] [ref=e122]
+                - generic [ref=e123]:
+                  - generic [ref=e124]: "8.4"
+                  - generic [ref=e125]: "2010"
+                - button "播放" [ref=e126]
+            - generic [ref=e128] [cursor=pointer]:
+              - img "进击的巨人" [ref=e129]
+              - generic [ref=e130]:
+                - generic [ref=e131]: 动漫
+                - heading "进击的巨人" [level=3] [ref=e132]
+                - generic [ref=e133]:
+                  - generic [ref=e134]: "9"
+                  - generic [ref=e135]: "2013"
+                - button "播放" [ref=e136]
+            - generic [ref=e138] [cursor=pointer]:
+              - img "绝命毒师" [ref=e139]
+              - generic [ref=e140]:
+                - generic [ref=e141]: 剧集
+                - heading "绝命毒师" [level=3] [ref=e142]
+                - generic [ref=e143]:
+                  - generic [ref=e144]: "9.3"
+                  - generic [ref=e145]: "2008"
+                - button "播放" [ref=e146]
+            - generic [ref=e148] [cursor=pointer]:
+              - img "黑暗荣耀" [ref=e149]
+              - generic [ref=e150]:
+                - generic [ref=e151]: 剧集
+                - heading "黑暗荣耀" [level=3] [ref=e152]
+                - generic [ref=e153]:
+                  - generic [ref=e154]: "8.1"
+                  - generic [ref=e155]: "2022"
+                - button "播放" [ref=e156]
+            - generic [ref=e158] [cursor=pointer]:
+              - img "鬼灭之刃" [ref=e159]
+              - generic [ref=e160]:
+                - generic [ref=e161]: 动漫
+                - heading "鬼灭之刃" [level=3] [ref=e162]
+                - generic [ref=e163]:
+                  - generic [ref=e164]: "8.6"
+                  - generic [ref=e165]: "2019"
+                - button "播放" [ref=e166]
