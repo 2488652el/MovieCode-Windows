@@ -10,19 +10,52 @@
   [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
   [![Tauri](https://img.shields.io/badge/Tauri-2.0-green.svg)](https://tauri.app/)
   [![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev/)
-  [![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases)
+  [![Version](https://img.shields.io/badge/Version-2.1.0-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases)
 </div>
+
 
 ---
 
 ## ✨ 功能特性
 
-- 🎬 **海报墙浏览** - Apple TV 风格的精美海报墙展示
-- 📡 **NAS 连接** - 支持 SMB、NFS、WebDAV、本地目录多种协议
-- 🔍 **智能扫描** - 自动识别电影、电视剧、动漫
-- 🎥 **TMDB 增强** - 海报、剧照、演员、评分等丰富元数据
-- ▶️ **内置播放** - 支持多种格式的本地/网络视频播放
-- 📱 **响应式设计** - 适配不同屏幕尺寸
+| 功能 | 描述 |
+|------|------|
+| 🎬 **海报墙浏览** | Apple TV 风格的精美海报墙展示 |
+| 📡 **NAS 连接** | 支持 SMB、NFS、WebDAV、本地目录多种协议 |
+| 🔍 **智能扫描** | 自动识别电影、电视剧、动漫 |
+| 🎥 **TMDB 增强** | 海报、剧照、演员、评分等丰富元数据 (7天缓存) |
+| ▶️ **内置播放** | 支持多种格式的本地/网络视频播放，8级倍速 |
+| 📱 **响应式设计** | 适配不同屏幕尺寸 |
+| ⭐ **个性化推荐** | 基于观看历史推荐相似内容 |
+| 👨‍👩‍👧 **家长控制** | PIN 码保护、年龄分级过滤 |
+| 📥 **离线下载** | 下载管理、进度跟踪、暂停/继续 |
+| 🌙 **暗黑模式** | 自动定时切换深色主题 |
+| 📜 **播放历史** | 续播提示、历史记录管理 |
+
+## 🚀 v2.1.0 新功能
+
+### Sprint 6: 离线下载
+- 📥 下载管理器 - 统一的下载队列管理
+- ⏸️ 暂停/继续/取消 - 灵活的下载控制
+- 📊 实时进度 - 详细的下载状态显示
+- 🔄 失败重试 - 自动重试失败的下载任务
+
+### Sprint 5: 家长控制
+- 🔐 4位 PIN 码保护
+- 🎯 年龄分级过滤 (G/PG/PG-13/R/NC-17)
+- 🎭 媒体类型过滤 (电影/剧集/动漫)
+- ⏰ 每日观看时长限制
+
+### Sprint 4: 个性化推荐
+- 🤖 智能推荐算法 - 基于观看历史
+- 🔍 相似内容发现 - Jaccard 相似度匹配
+- 🆕 最新上映 - 热门新内容推荐
+
+### Sprint 3: 用户体验优化
+- 📍 续播提示弹窗
+- 📜 播放历史记录
+- 🎬 海报进度标签
+- 🌙 自动暗黑模式
 
 ## 🎨 界面预览
 
@@ -30,7 +63,7 @@
 |:---------:|:-------:|
 | ![Home](public/screenshot-home.png) | ![Player](public/screenshot-player.png) |
 
-### v2.0.0 UI 更新亮点
+### UI 更新亮点
 
 - **Hero 轮播** - 自动轮播 + 手动切换
 - **分类 Tab 筛选** - 推荐 / 电影 / 电视剧 / 动漫
@@ -49,8 +82,9 @@
 
 **方式一：安装包（推荐）**
 
-[![Download](https://img.shields.io/badge/Download-NSIS_Installer-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases/download/v2.0.0/MovieCode_2.0.0_x64-setup.exe)
-[![Download](https://img.shields.io/badge/Download-MSI_Installer-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases/download/v2.0.0/MovieCode_2.0.0_x64_en-US.msi)
+[![Download](https://img.shields.io/badge/Download-NSIS_Installer-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases/download/v2.1.0/MovieCode_2.1.0_x64-setup.exe)
+
+[![Download](https://img.shields.io/badge/Download-MSI_Installer-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases/download/v2.1.0/MovieCode_2.1.0_x64_en-US.msi)
 
 **方式二：便携版**
 ```bash
@@ -78,7 +112,9 @@ npm run tauri build
 ### 配置 TMDB API
 
 1. 访问 [TMDB](https://www.themoviedb.org/settings/api) 注册并获取 API Key（免费）
+
 2. 运行应用 → 设置 → API设置
+
 3. 输入您的 API Key
 
 ## 📁 项目结构
@@ -90,10 +126,13 @@ MovieCode-Windows/
 │   │   ├── layout/           # 布局组件
 │   │   ├── home/             # 海报墙组件
 │   │   ├── player/           # 播放器组件
-│   │   └── settings/         # 设置组件
+│   │   ├── settings/         # 设置组件
+│   │   └── downloads/        # 下载组件
 │   ├── pages/                # 页面
 │   ├── stores/               # Zustand 状态管理
-│   ├── services/api/         # TMDB API 服务
+│   ├── services/             # 服务
+│   │   ├── api/              # TMDB API 服务
+│   │   └── recommendation/   # 推荐服务
 │   └── types/                # TypeScript 类型定义
 ├── src-tauri/                # Rust 后端源码
 │   └── src/
@@ -115,15 +154,24 @@ MovieCode-Windows/
 | 后端语言 | Rust |
 | 元数据 | TMDB API |
 
+## 📋 更新日志
+
+### v2.1.0 (2026-03-22)
+- ✨ 新增离线下载功能
+- ✨ 新增家长控制 (PIN保护/年龄分级)
+- ✨ 新增个性化推荐
+- ✨ 新增播放历史管理
+- ✨ 新增自动暗黑模式
+- 🐛 修复已知问题
+
+### v2.0.0 (2026-03-22)
+- 🎨 全新 UI 设计
+- 🚀 Tauri v2 重构
+- ⚡ 性能优化
+
 ## 🤝 贡献指南
 
 欢迎提交 Issue 和 Pull Request！
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建 Pull Request
 
 ## 📄 许可证
 
