@@ -40,7 +40,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onItemSelect }) => {
   const [currentCategory, setCurrentCategory] = useState<MediaCategory>('all');
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const carouselRef = useRef<NodeJS.Timeout | null>(null);
+  const carouselRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // 初始化演示数据
   useEffect(() => {

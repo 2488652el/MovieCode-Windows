@@ -1,6 +1,6 @@
 [package]
 name = "moviecode"
-version = "1.0.0"
+version = "2.0.0"
 description = "MovieCode - Windows Media Center Application"
 authors = ["MovieCode Team"]
 edition = "2021"
