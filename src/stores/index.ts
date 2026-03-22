@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { MediaItem, NASConnection, ScanConfig, AppSettings, PlayerState, ParentalControlSettings, ContentRating, MediaType } from '@/types';
+import type { MediaItem, NASConnection, ScanConfig, AppSettings, PlayerState } from '@/types';
 
 // 媒体库Store
 interface MediaStore {
@@ -111,7 +111,6 @@ export const useScanStore = create<ScanStore>()(
       configs: [],
       isScanning: false,
       scanProgress: 0,
-      
       addConfig: (config) => set((state) => ({ configs: [...state.configs, config] })),
       updateConfig: (id, updates) => set((state) => ({
         configs: state.configs.map((cfg) => cfg.id === id ? { ...cfg, ...updates } : cfg)
@@ -157,10 +156,135 @@ export const useSettingsStore = create<SettingsStore>()(
   )
 );
 
+// 播放进度数据类型
+export interface PlaybackProgress {
+  mediaId: string;
+  title: string;
+  currentTime: number;
+  duration: number;
+  lastPlayedAt: number;
+  playbackSpeed: number;
+  subtitleTrackIndex: number | null;
+  audioTrackIndex: number | null;
+}
+
+// 字幕设置类型
+export interface SubtitleSettings {
+  enabled: boolean;
+  delay: number;
+  size: number;
+  color: string;
+  position: 'top' | 'middle' | 'bottom';
+}
+
+// 播放进度Store
+interface PlaybackProgressStore {
+  progress: Record<string, PlaybackProgress>;
+  lastPlaybackSpeed: number;
+  subtitleSettings: SubtitleSettings;
+  saveProgress: (mediaId: string, progress: Omit<PlaybackProgress, 'lastPlayedAt'>) => void;
+  getProgress: (mediaId: string) => PlaybackProgress | null;
+  hasProgress: (mediaId: string) => boolean;
+  getProgressPercent: (mediaId: string) => number | null;
+  deleteProgress: (mediaId: string) => void;
+  clearAllProgress: () => void;
+  setLastPlaybackSpeed: (speed: number) => void;
+  updateSubtitleSettings: (settings: Partial<SubtitleSettings>) => void;
+  resetSubtitleSettings: () => void;
+}
+
+const defaultSubtitleSettings: SubtitleSettings = {
+  enabled: false,
+  delay: 0,
+  size: 1,
+  color: '#FFFFFF',
+  position: 'bottom',
+};
+
+export const usePlaybackProgressStore = create<PlaybackProgressStore>()(
+  persist(
+    (set, get) => ({
+      progress: {},
+      lastPlaybackSpeed: 1,
+      subtitleSettings: defaultSubtitleSettings,
+      
+      saveProgress: (mediaId, progressData) => {
+        const { progress } = get();
+        const duration = progressData.duration;
+        // Only save if progress is between 5% and 95%
+        if (duration > 0) {
+          const progressPercent = (progressData.currentTime / duration) * 100;
+          if (progressPercent <= 5 || progressPercent >= 95) {
+            return; // Don't save if at beginning or end
+          }
+        }
+        set({
+          progress: {
+            ...progress,
+            [mediaId]: {
+              ...progressData,
+              lastPlayedAt: Date.now(),
+            },
+          },
+        });
+      },
+      
+      getProgress: (mediaId) => {
+        const { progress } = get();
+        return progress[mediaId] || null;
+      },
+      
+      hasProgress: (mediaId) => {
+        const prog = get().progress[mediaId];
+        if (!prog) return false;
+        const percent = (prog.currentTime / prog.duration) * 100;
+        return percent > 5 && percent < 95;
+      },
+      
+      getProgressPercent: (mediaId) => {
+        const prog = get().progress[mediaId];
+        if (!prog || prog.duration <= 0) return null;
+        return (prog.currentTime / prog.duration) * 100;
+      },
+      
+      deleteProgress: (mediaId) => {
+        const { progress } = get();
+        const newProgress = { ...progress };
+        delete newProgress[mediaId];
+        set({ progress: newProgress });
+      },
+      
+      clearAllProgress: () => set({ progress: {} }),
+      setLastPlaybackSpeed: (speed) => set({ lastPlaybackSpeed: speed }),
+      updateSubtitleSettings: (settings) =>
+        set((state) => ({
+          subtitleSettings: { ...state.subtitleSettings, ...settings },
+        })),
+      resetSubtitleSettings: () => set({ subtitleSettings: defaultSubtitleSettings }),
+    }),
+    {
+      name: 'playback-progress-store',
+    }
+  )
+);
+
 // 播放器Store
 interface PlayerStore extends PlayerState {
   currentMedia: MediaItem | null;
   currentEpisode: number;
+  // Subtitle state
+  subtitleTracks: { index: number; label: string; language: string; src: string }[];
+  selectedSubtitleIndex: number;
+  // Audio track state
+  audioTracks: { index: number; label: string; language: string; channels: number; codec: string }[];
+  selectedAudioIndex: number;
+  // UI state
+  showSpeedSelector: boolean;
+  showSubtitleSelector: boolean;
+  showAudioSelector: boolean;
+  showSubtitleSettings: boolean;
+  showResumeDialog: boolean;
+  resumePosition: number;
   setCurrentMedia: (media: MediaItem | null) => void;
   setCurrentEpisode: (episode: number) => void;
   play: () => void;
@@ -172,6 +296,19 @@ interface PlayerStore extends PlayerState {
   toggleFullscreen: () => void;
   setPlaybackRate: (rate: number) => void;
   setBuffered: (buffered: number) => void;
+  // Subtitle methods
+  setSubtitleTracks: (tracks: { index: number; label: string; language: string; src: string }[]) => void;
+  setSelectedSubtitleIndex: (index: number) => void;
+  // Audio methods
+  setAudioTracks: (tracks: { index: number; label: string; channels: number; codec: string; language: string }[]) => void;
+  setSelectedAudioIndex: (index: number) => void;
+  // UI methods
+  setShowSpeedSelector: (show: boolean) => void;
+  setShowSubtitleSelector: (show: boolean) => void;
+  setShowAudioSelector: (show: boolean) => void;
+  setShowSubtitleSettings: (show: boolean) => void;
+  setShowResumeDialog: (show: boolean) => void;
+  setResumePosition: (position: number) => void;
   reset: () => void;
 }
 
@@ -186,8 +323,26 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   isFullscreen: false,
   playbackRate: 1,
   buffered: 0,
+  // New state
+  subtitleTracks: [],
+  selectedSubtitleIndex: -1,
+  audioTracks: [],
+  selectedAudioIndex: 0,
+  showSpeedSelector: false,
+  showSubtitleSelector: false,
+  showAudioSelector: false,
+  showSubtitleSettings: false,
+  showResumeDialog: false,
+  resumePosition: 0,
   
-  setCurrentMedia: (media) => set({ currentMedia: media, currentTime: 0, isPlaying: false }),
+  setCurrentMedia: (media) => set({
+    currentMedia: media,
+    currentTime: 0,
+    isPlaying: false,
+    subtitleTracks: [],
+    selectedSubtitleIndex: -1,
+    audioTracks: [],
+  }),
   setCurrentEpisode: (episode) => set({ currentEpisode: episode, currentTime: 0 }),
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
@@ -198,12 +353,34 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   toggleFullscreen: () => set((state) => ({ isFullscreen: !state.isFullscreen })),
   setPlaybackRate: (rate) => set({ playbackRate: rate }),
   setBuffered: (buffered) => set({ buffered }),
+  // Subtitle
+  setSubtitleTracks: (tracks) => set({ subtitleTracks: tracks }),
+  setSelectedSubtitleIndex: (index) => set({ selectedSubtitleIndex: index }),
+  // Audio
+  setAudioTracks: (tracks) => set({ audioTracks: tracks }),
+  setSelectedAudioIndex: (index) => set({ selectedAudioIndex: index }),
+  // UI
+  setShowSpeedSelector: (show) => set({ showSpeedSelector: show }),
+  setShowSubtitleSelector: (show) => set({ showSubtitleSelector: show }),
+  setShowAudioSelector: (show) => set({ showAudioSelector: show }),
+  setShowSubtitleSettings: (show) => set({ showSubtitleSettings: show }),
+  setShowResumeDialog: (show) => set({ showResumeDialog: show }),
+  setResumePosition: (position) => set({ resumePosition: position }),
   reset: () => set({
     isPlaying: false,
     currentTime: 0,
     duration: 0,
     currentMedia: null,
-    currentEpisode: 1
+    currentEpisode: 1,
+    subtitleTracks: [],
+    selectedSubtitleIndex: -1,
+    audioTracks: [],
+    showSpeedSelector: false,
+    showSubtitleSelector: false,
+    showAudioSelector: false,
+    showSubtitleSettings: false,
+    showResumeDialog: false,
+    resumePosition: 0,
   }),
 }));
 
@@ -221,248 +398,3 @@ export const useUIStore = create<UIStore>((set) => ({
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setCurrentTab: (tab) => set({ currentTab: tab }),
 }));
-
-// ==================== 播放历史 Store ====================
-const MAX_HISTORY = 50;
-
-interface HistoryStore {
-  entries: PlayHistoryEntry[];
-  addEntry: (entry: PlayHistoryEntry) => void;
-  removeEntry: (mediaId: string) => void;
-  updateProgress: (mediaId: string, currentTime: number, duration: number) => void;
-  clearHistory: () => void;
-  getEntry: (mediaId: string) => PlayHistoryEntry | undefined;
-  getRecentEntries: (limit?: number) => PlayHistoryEntry[];
-}
-
-export const useHistoryStore = create<HistoryStore>()(
-  persist(
-    (set, get) => ({
-      entries: [],
-      
-      addEntry: (entry) => set((state) => {
-        const existingIndex = state.entries.findIndex(e => e.mediaId === entry.mediaId);
-        let newEntries = [...state.entries];
-        
-        if (existingIndex !== -1) {
-          newEntries.splice(existingIndex, 1);
-        }
-        
-        newEntries.unshift({ ...entry, lastWatched: Date.now() });
-        
-        if (newEntries.length > MAX_HISTORY) {
-          newEntries = newEntries.slice(0, MAX_HISTORY);
-        }
-        
-        return { entries: newEntries };
-      }),
-      
-      removeEntry: (mediaId) => set((state) => ({
-        entries: state.entries.filter(e => e.mediaId !== mediaId)
-      })),
-      
-      updateProgress: (mediaId, currentTime, duration) => set((state) => ({
-        entries: state.entries.map(e => 
-          e.mediaId === mediaId 
-            ? { ...e, currentTime, duration, progress: duration > 0 ? (currentTime / duration) * 100 : 0, lastWatched: Date.now() }
-            : e
-        )
-      })),
-      
-      clearHistory: () => set({ entries: [] }),
-      
-      getEntry: (mediaId) => get().entries.find(e => e.mediaId === mediaId),
-      
-      getRecentEntries: (limit = 10) => get().entries.slice(0, limit),
-    }),
-    { name: 'history-store' }
-  )
-);
-
-// ==================== 主题 Store ====================
-const defaultThemeSettings: ThemeSettings = {
-  mode: 'dark',
-  autoDarkStart: '22:00',
-  autoDarkEnd: '06:00',
-};
-
-interface ThemeStore {
-  settings: ThemeSettings;
-  isDark: boolean;
-  setThemeMode: (mode: ThemeMode) => void;
-  setAutoDarkTime: (start: string, end: string) => void;
-  updateIsDark: () => void;
-}
-
-export const useThemeStore = create<ThemeStore>()(
-  persist(
-    (set, get) => ({
-      settings: defaultThemeSettings,
-      isDark: true,
-      
-      setThemeMode: (mode) => set((state) => ({
-        settings: { ...state.settings, mode },
-        isDark: mode === 'dark' || (mode === 'system' && get().isDark)
-      })),
-      
-      setAutoDarkTime: (start, end) => set((state) => ({
-        settings: { ...state.settings, autoDarkStart: start, autoDarkEnd: end }
-      })),
-      
-      updateIsDark: () => {
-        const { settings } = get();
-        if (settings.mode === 'system') {
-          const now = new Date();
-          const currentTime = ${now.getHours().toString().padStart(2, '0')}:;
-          const isInDarkPeriod = currentTime >= settings.autoDarkStart || currentTime < settings.autoDarkEnd;
-          set({ isDark: isInDarkPeriod });
-        }
-      },
-    }),
-    { name: 'theme-store' }
-  )
-);
-
-// ==================== 家长控制 Store ====================
-const defaultParentalSettings: ParentalControlSettings = {
-  isEnabled: false,
-  pin: '0000',
-  contentRating: 'R',
-  blockGenres: [],
-  allowedMediaTypes: ['movie', 'tv', 'anime'],
-  dailyWatchLimit: 0,
-  blockedMediaIds: [],
-};
-
-interface ParentalControlsStore {
-  settings: ParentalControlSettings;
-  isUnlocked: boolean;
-  unlockUntil: number | null;
-  setEnabled: (enabled: boolean) => void;
-  setPin: (pin: string) => boolean;
-  verifyPin: (pin: string) => boolean;
-  setContentRating: (rating: ContentRating) => void;
-  blockGenre: (genreId: string) => void;
-  unblockGenre: (genreId: string) => void;
-  setAllowedMediaTypes: (types: MediaType[]) => void;
-  setDailyWatchLimit: (minutes: number) => void;
-  blockMedia: (mediaId: string) => void;
-  unblockMedia: (mediaId: string) => void;
-  isContentAllowed: (item: { genres?: { id: number }[]; type?: MediaType; mediaId?: string }) => boolean;
-  isParentalUnlocked: () => boolean;
-  unlockTemporarily: (durationMs: number) => void;
-  lock: () => void;
-}
-
-export const useParentalControlsStore = create<ParentalControlsStore>()(
-  persist(
-    (set, get) => ({
-      settings: defaultParentalSettings,
-      isUnlocked: false,
-      unlockUntil: null,
-      
-      setEnabled: (enabled) => set((state) => ({
-        settings: { ...state.settings, isEnabled: enabled }
-      })),
-      
-      setPin: (pin) => {
-        if (!/^\d{4}$/.test(pin)) {
-          return false;
-        }
-        set((state) => ({
-          settings: { ...state.settings, pin }
-        }));
-        return true;
-      },
-      
-      verifyPin: (pin) => get().settings.pin === pin,
-      
-      setContentRating: (rating) => set((state) => ({
-        settings: { ...state.settings, contentRating: rating }
-      })),
-      
-      blockGenre: (genreId) => set((state) => ({
-        settings: {
-          ...state.settings,
-          blockGenres: [...new Set([...state.settings.blockGenres, genreId])]
-        }
-      })),
-      
-      unblockGenre: (genreId) => set((state) => ({
-        settings: {
-          ...state.settings,
-          blockGenres: state.settings.blockGenres.filter(id => id !== genreId)
-        }
-      })),
-      
-      setAllowedMediaTypes: (types) => set((state) => ({
-        settings: { ...state.settings, allowedMediaTypes: types }
-      })),
-      
-      setDailyWatchLimit: (minutes) => set((state) => ({
-        settings: { ...state.settings, dailyWatchLimit: minutes }
-      })),
-      
-      blockMedia: (mediaId) => set((state) => ({
-        settings: {
-          ...state.settings,
-          blockedMediaIds: [...new Set([...state.settings.blockedMediaIds, mediaId])]
-        }
-      })),
-      
-      unblockMedia: (mediaId) => set((state) => ({
-        settings: {
-          ...state.settings,
-          blockedMediaIds: state.settings.blockedMediaIds.filter(id => id !== mediaId)
-        }
-      })),
-      
-      isContentAllowed: (item) => {
-        const { settings } = get();
-        
-        // 如果家长控制未启用，允许所有内容
-        if (!settings.isEnabled) {
-          return true;
-        }
-        
-        // 检查手动屏蔽的媒体
-        if (item.mediaId && settings.blockedMediaIds.includes(item.mediaId)) {
-          return false;
-        }
-        
-        // 检查媒体类型
-        if (item.type && !settings.allowedMediaTypes.includes(item.type)) {
-          return false;
-        }
-        
-        // 检查题材屏蔽
-        if (item.genres) {
-          const genreIds = item.genres.map(g => g.id.toString());
-          if (settings.blockGenres.some(id => genreIds.includes(id))) {
-            return false;
-          }
-        }
-        
-        return true;
-      },
-      
-      isParentalUnlocked: () => {
-        const { isUnlocked, unlockUntil } = get();
-        if (!isUnlocked) return false;
-        if (unlockUntil && Date.now() > unlockUntil) {
-          set({ isUnlocked: false, unlockUntil: null });
-          return false;
-        }
-        return true;
-      },
-      
-      unlockTemporarily: (durationMs) => set({
-        isUnlocked: true,
-        unlockUntil: Date.now() + durationMs
-      }),
-      
-      lock: () => set({ isUnlocked: false, unlockUntil: null }),
-    }),
-    { name: 'parental-controls-store' }
-  )
-);
