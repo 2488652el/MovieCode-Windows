@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { MediaItem, NASConnection, ScanConfig, AppSettings, PlayerState } from '@/types';
+import type { MediaItem, NASConnection, ScanConfig, AppSettings, PlayerState, ParentalControlSettings, ContentRating, MediaType } from '@/types';
 
 // 媒体库Store
 interface MediaStore {
@@ -320,5 +320,149 @@ export const useThemeStore = create<ThemeStore>()(
       },
     }),
     { name: 'theme-store' }
+  )
+);
+
+// ==================== 家长控制 Store ====================
+const defaultParentalSettings: ParentalControlSettings = {
+  isEnabled: false,
+  pin: '0000',
+  contentRating: 'R',
+  blockGenres: [],
+  allowedMediaTypes: ['movie', 'tv', 'anime'],
+  dailyWatchLimit: 0,
+  blockedMediaIds: [],
+};
+
+interface ParentalControlsStore {
+  settings: ParentalControlSettings;
+  isUnlocked: boolean;
+  unlockUntil: number | null;
+  setEnabled: (enabled: boolean) => void;
+  setPin: (pin: string) => boolean;
+  verifyPin: (pin: string) => boolean;
+  setContentRating: (rating: ContentRating) => void;
+  blockGenre: (genreId: string) => void;
+  unblockGenre: (genreId: string) => void;
+  setAllowedMediaTypes: (types: MediaType[]) => void;
+  setDailyWatchLimit: (minutes: number) => void;
+  blockMedia: (mediaId: string) => void;
+  unblockMedia: (mediaId: string) => void;
+  isContentAllowed: (item: { genres?: { id: number }[]; type?: MediaType; mediaId?: string }) => boolean;
+  isParentalUnlocked: () => boolean;
+  unlockTemporarily: (durationMs: number) => void;
+  lock: () => void;
+}
+
+export const useParentalControlsStore = create<ParentalControlsStore>()(
+  persist(
+    (set, get) => ({
+      settings: defaultParentalSettings,
+      isUnlocked: false,
+      unlockUntil: null,
+      
+      setEnabled: (enabled) => set((state) => ({
+        settings: { ...state.settings, isEnabled: enabled }
+      })),
+      
+      setPin: (pin) => {
+        if (!/^\d{4}$/.test(pin)) {
+          return false;
+        }
+        set((state) => ({
+          settings: { ...state.settings, pin }
+        }));
+        return true;
+      },
+      
+      verifyPin: (pin) => get().settings.pin === pin,
+      
+      setContentRating: (rating) => set((state) => ({
+        settings: { ...state.settings, contentRating: rating }
+      })),
+      
+      blockGenre: (genreId) => set((state) => ({
+        settings: {
+          ...state.settings,
+          blockGenres: [...new Set([...state.settings.blockGenres, genreId])]
+        }
+      })),
+      
+      unblockGenre: (genreId) => set((state) => ({
+        settings: {
+          ...state.settings,
+          blockGenres: state.settings.blockGenres.filter(id => id !== genreId)
+        }
+      })),
+      
+      setAllowedMediaTypes: (types) => set((state) => ({
+        settings: { ...state.settings, allowedMediaTypes: types }
+      })),
+      
+      setDailyWatchLimit: (minutes) => set((state) => ({
+        settings: { ...state.settings, dailyWatchLimit: minutes }
+      })),
+      
+      blockMedia: (mediaId) => set((state) => ({
+        settings: {
+          ...state.settings,
+          blockedMediaIds: [...new Set([...state.settings.blockedMediaIds, mediaId])]
+        }
+      })),
+      
+      unblockMedia: (mediaId) => set((state) => ({
+        settings: {
+          ...state.settings,
+          blockedMediaIds: state.settings.blockedMediaIds.filter(id => id !== mediaId)
+        }
+      })),
+      
+      isContentAllowed: (item) => {
+        const { settings } = get();
+        
+        // 如果家长控制未启用，允许所有内容
+        if (!settings.isEnabled) {
+          return true;
+        }
+        
+        // 检查手动屏蔽的媒体
+        if (item.mediaId && settings.blockedMediaIds.includes(item.mediaId)) {
+          return false;
+        }
+        
+        // 检查媒体类型
+        if (item.type && !settings.allowedMediaTypes.includes(item.type)) {
+          return false;
+        }
+        
+        // 检查题材屏蔽
+        if (item.genres) {
+          const genreIds = item.genres.map(g => g.id.toString());
+          if (settings.blockGenres.some(id => genreIds.includes(id))) {
+            return false;
+          }
+        }
+        
+        return true;
+      },
+      
+      isParentalUnlocked: () => {
+        const { isUnlocked, unlockUntil } = get();
+        if (!isUnlocked) return false;
+        if (unlockUntil && Date.now() > unlockUntil) {
+          set({ isUnlocked: false, unlockUntil: null });
+          return false;
+        }
+        return true;
+      },
+      
+      unlockTemporarily: (durationMs) => set({
+        isUnlocked: true,
+        unlockUntil: Date.now() + durationMs
+      }),
+      
+      lock: () => set({ isUnlocked: false, unlockUntil: null }),
+    }),
+    { name: 'parental-controls-store' }
   )
 );

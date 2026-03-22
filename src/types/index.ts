@@ -256,3 +256,36 @@ export interface ThemeSettings {
   autoDarkStart: string;
   autoDarkEnd: string;
 }
+
+// 年龄分级
+export type ContentRating = 'G' | 'PG' | 'PG13' | 'R' | 'NC17' | 'adults_only';
+
+// 家长控制设置
+export interface ParentalControlSettings {
+  isEnabled: boolean;
+  pin: string; // 4位数字密码
+  contentRating: ContentRating; // 允许观看的最高分级
+  blockGenres: string[]; // 屏蔽的题材ID列表
+  allowedMediaTypes: MediaType[]; // 允许的媒体类型
+  dailyWatchLimit: number; // 每日观看时长限制(分钟), 0表示不限制
+  blockedMediaIds: string[]; // 手动屏蔽的媒体ID
+}
+
+// 年龄分级配置
+export const CONTENT_RATING_CONFIG: Record<ContentRating, { label: string; minAge: number; description: string }> = {
+  G: { label: 'G级', minAge: 0, description: '所有年龄' },
+  PG: { label: 'PG级', minAge: 10, description: '建议家长指导' },
+  PG13: { label: 'PG-13', minAge: 13, description: '13岁以上' },
+  R: { label: 'R级', minAge: 17, description: '17岁以上' },
+  NC17: { label: 'NC-17', minAge: 18, description: '成人内容' },
+  adults_only: { label: '仅成人', minAge: 21, description: '最高限制' },
+};
+
+// 需要家长控制的内容标签关键词
+export const MATURE_GENRE_KEYWORDS = [
+  'horror', 'thriller', 'war', 'crime', 'documentary', 'drama',
+  '战争', '恐怖', '犯罪', '惊悚', '纪录片'
+];
+
+// TMDB 成人内容ID (这些类型的内容应该被屏蔽)
+export const TMDB_ADULT_GENRE_IDS = [27, 80, 99, 10752]; // Horror, Crime, Documentary, War
