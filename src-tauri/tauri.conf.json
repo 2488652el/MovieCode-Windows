@@ -1,13 +1,14 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "MovieCode",
-  "version": "2.0.0",
+  "version": "2.2.0",
   "identifier": "com.moviecode.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist"
+    "frontendDist": "../dist",
+    "devtools": true
   },
   "app": {
     "windows": [
@@ -25,11 +26,12 @@
     ],
     "security": {
       "csp": null
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": "all",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -37,10 +39,38 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "category": "public.app-category.entertainment",
+    "shortDescription": "MovieCode 媒体中心",
+    "longDescription": "MovieCode 是一款现代化的媒体中心应用，支持电影、电视剧、动漫等多种媒体内容的浏览、搜索和播放。",
     "windows": {
       "nsis": {
         "installMode": "currentUser"
+      },
+      "wix": {
+        "language": ["zh-CN", "en-US"]
       }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "frameworks": [],
+      "entitlements": null,
+      "signingIdentity": null,
+      "providerShortName": null
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      },
+      "deb": {
+        "depends": []
+      },
+      "rpm": {
+        "depends": []
+      }
+    },
+    "ios": {
+      "minimumSystemVersion": "13.0"
     }
-  }
+  },
+  "plugins": {}
 }

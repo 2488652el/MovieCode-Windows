@@ -1,13 +1,25 @@
 {
-  "name": "f-testmoviecode",
+  "name": "moviecode",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.2.0",
   "type": "module",
+  "description": "MovieCode - 跨平台媒体中心",
+  "author": "MovieCode Team",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:win": "tsc && vite build",
+    "build:mac": "tsc && vite build",
+    "build:linux": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:win": "tauri build --target x86_64-pc-windows-msvc",
+    "tauri:build:mac": "tauri build --target aarch64-apple-darwin",
+    "tauri:build:linux": "tauri build --target x86_64-unknown-linux-gnu",
+    "tauri:build:all": "tauri build --target x86_64-pc-windows-msvc --target aarch64-apple-darwin --target x86_64-unknown-linux-gnu"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
