@@ -1,10 +1,11 @@
 name: Tauri CI/CD
 
 on:
+  workflow_dispatch:  # 添加这个用于手动触发
   push:
-    branches: [main]
+    branches: [master, main]  # 修改为同时支持 master 和 main
   pull_request:
-    branches: [main]
+    branches: [master, main]
 
 jobs:
   build:
