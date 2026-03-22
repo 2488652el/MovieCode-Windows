@@ -10,9 +10,8 @@
   [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
   [![Tauri](https://img.shields.io/badge/Tauri-2.0-green.svg)](https://tauri.app/)
   [![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev/)
-  [![Version](https://img.shields.io/badge/Version-2.1.0-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases)
+  [![Version](https://img.shields.io/badge/Version-2.2.0-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases)
 </div>
-
 
 ---
 
@@ -31,31 +30,37 @@
 | 📥 **离线下载** | 下载管理、进度跟踪、暂停/继续 |
 | 🌙 **暗黑模式** | 自动定时切换深色主题 |
 | 📜 **播放历史** | 续播提示、历史记录管理 |
+| 🚀 **性能优化** | 懒加载、图片缓存、快速启动 |
+| 🌐 **Plex/Emby 连接** | 连接现有媒体服务器 |
+| 📡 **DLNA 投屏** | 推送到局域网内的智能电视/音箱 |
+| 👥 **多用户支持** | 家庭成员独立配置 |
+| ⭐ **收藏夹** | 标记喜爱的影片 |
+| 📋 **播放列表** | 创建自定义播放列表 |
+| 📊 **观看统计** | 每日/每周观看时长统计 |
 
-## 🚀 v2.1.0 新功能
+## 🚀 v2.2.0 新功能
 
-### Sprint 6: 离线下载
-- 📥 下载管理器 - 统一的下载队列管理
-- ⏸️ 暂停/继续/取消 - 灵活的下载控制
-- 📊 实时进度 - 详细的下载状态显示
-- 🔄 失败重试 - 自动重试失败的下载任务
+### Sprint 10: 用户增强
+- 👥 多用户支持 - 家庭成员独立配置
+- ⭐ 收藏夹 - 标记喜爱的影片，支持添加笔记
+- 📋 播放列表 - 创建自定义播放列表，支持拖拽排序
+- 📊 观看统计 - 每日/每周观看时长统计，最爱榜单
 
-### Sprint 5: 家长控制
-- 🔐 4位 PIN 码保护
-- 🎯 年龄分级过滤 (G/PG/PG-13/R/NC-17)
-- 🎭 媒体类型过滤 (电影/剧集/动漫)
-- ⏰ 每日观看时长限制
+### Sprint 9: 生态扩展
+- 🌐 Plex/Emby 连接器 - 连接现有的 Plex、Emby、Jellyfin 服务器
+- 📡 WebDAV 增强 - 双向同步，递归媒体文件扫描
+- 📺 DLNA 投屏 - 发现并投送到局域网内的智能电视/音箱
 
-### Sprint 4: 个性化推荐
-- 🤖 智能推荐算法 - 基于观看历史
-- 🔍 相似内容发现 - Jaccard 相似度匹配
-- 🆕 最新上映 - 热门新内容推荐
+### Sprint 8: 跨平台支持
+- 🍎 macOS 支持 - Tauri 多平台构建
+- 🐧 Linux 支持 - AppImage/deb/rpm 打包
+- 📱 Android 手机适配 - Phone 产品风味
 
-### Sprint 3: 用户体验优化
-- 📍 续播提示弹窗
-- 📜 播放历史记录
-- 🎬 海报进度标签
-- 🌙 自动暗黑模式
+### Sprint 7: 性能优化
+- 🚀 启动优化 - 冷启动 < 3秒
+- 🖼️ 海报懒加载 - IntersectionObserver 视口检测
+- 💾 图片缓存 - IndexedDB + 内存缓存混合
+- ⚡ 预连接 - 关键域名预连接
 
 ## 🎨 界面预览
 
@@ -80,13 +85,16 @@
 
 ### 安装方式
 
-**方式一：安装包（推荐）**
+**方式一：一键安装（推荐）**
 
-[![Download](https://img.shields.io/badge/Download-NSIS_Installer-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases/download/v2.1.0/MovieCode_2.1.0_x64-setup.exe)
+[![Download](https://img.shields.io/badge/Download-NSIS_Installer-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases/latest)
 
-[![Download](https://img.shields.io/badge/Download-MSI_Installer-blue.svg)](https://github.com/2488652el/MovieCode-Windows/releases/download/v2.1.0/MovieCode_2.1.0_x64_en-US.msi)
+**方式二：MSI 安装包**
+```bash
+# 下载 MSI 文件并双击安装
+```
 
-**方式二：便携版**
+**方式三：便携版**
 ```bash
 # 直接运行可执行文件
 MovieCode.exe
@@ -107,6 +115,9 @@ npm run tauri dev
 
 # 构建发布版本
 npm run tauri build
+
+# 多平台构建
+npm run tauri:build:all
 ```
 
 ### 配置 TMDB API
@@ -130,9 +141,14 @@ MovieCode-Windows/
 │   │   └── downloads/        # 下载组件
 │   ├── pages/                # 页面
 │   ├── stores/               # Zustand 状态管理
+│   │   ├── userStore.ts     # 多用户/收藏/播放列表/统计
+│   │   └── *.ts             # 其他 Store
 │   ├── services/             # 服务
 │   │   ├── api/              # TMDB API 服务
-│   │   └── recommendation/   # 推荐服务
+│   │   ├── mediaServer.ts    # Plex/Emby 连接器
+│   │   ├── dlna.ts           # DLNA 投屏服务
+│   │   ├── webdav.ts         # WebDAV 服务
+│   │   └── imageCache.ts     # 图片缓存服务
 │   └── types/                # TypeScript 类型定义
 ├── src-tauri/                # Rust 后端源码
 │   └── src/
@@ -156,13 +172,18 @@ MovieCode-Windows/
 
 ## 📋 更新日志
 
+### v2.2.0 (2026-03-22)
+- ✨ Sprint 10: 多用户支持、收藏夹、播放列表、观看统计
+- ✨ Sprint 9: Plex/Emby 连接、WebDAV 增强、DLNA 投屏
+- ✨ Sprint 8: macOS/Linux/Android 多平台支持
+- ✨ Sprint 7: 性能优化（懒加载、图片缓存、快速启动）
+
 ### v2.1.0 (2026-03-22)
 - ✨ 新增离线下载功能
 - ✨ 新增家长控制 (PIN保护/年龄分级)
 - ✨ 新增个性化推荐
 - ✨ 新增播放历史管理
 - ✨ 新增自动暗黑模式
-- 🐛 修复已知问题
 
 ### v2.0.0 (2026-03-22)
 - 🎨 全新 UI 设计
